@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+﻿import { createApp } from 'vue'
 import App from './App.vue'
 import './style.css'
 
@@ -6,5 +6,5 @@ import './style.css'
 const app = createApp(App)
 app.mount('#app')
 
-console.log('🚀 Aplicação Vue iniciada - Aula 1!')
-console.log('📚 Curso Frontend Vue.js consumindo API Flask')
+console.log(' Aplicação Vue iniciada - Aula 3!')
+console.log(' Comunicação com API Flask usando Axios')

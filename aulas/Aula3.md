@@ -34,9 +34,35 @@
 
 ---
 
+### Configuração do Backend Flask (CORS)
+
+Antes de começar, precisamos habilitar CORS no Flask para permitir requisições do frontend.
+
+**Instalar Flask-CORS:**
+```bash
+cd backend_flask
+pip install flask-cors
+```
+
+**Atualizar `app/__init__.py`:**
+```python
+from flask_cors import CORS
+
+# Após criar a app
+app = Flask(__name__, template_folder="templates", static_folder="static")
+CORS(app)  # Habilitar CORS para todas as rotas
+```
+
+---
+
 ### Configuração do Axios
 
 #### Instalação e Configuração Base
+
+**Instalar Axios no frontend:**
+```bash
+npm install axios
+```
 
 ```javascript
 // src/services/api.js
@@ -116,6 +142,25 @@ export default api
 
 ### Serviço para Dados Básicos
 
+**IMPORTANTE:** O endpoint `/api/dados` no Flask requer autenticação JWT. Para esta aula introdutória, vamos:
+1. Criar um endpoint público para testes iniciais
+2. Demonstrar requisições com e sem autenticação
+
+#### Adicionar endpoint público no Flask
+
+**Em `backend_flask/app/routes.py`, adicione:**
+
+```python
+# Endpoint público para teste (sem autenticação)
+@app.route("/api/teste")
+def api_teste():
+    return jsonify({
+        "mensagem": "Conexão estabelecida com sucesso!",
+        "servidor": "Flask Backend",
+        "versao": "1.0.0"
+    })
+```
+
 #### `src/services/DadosService.js`
 
 ```javascript
@@ -123,7 +168,34 @@ import api from './api'
 
 export class DadosService {
   /**
-   * Busca dados básicos da API (equivalente ao endpoint Flask /api/dados)
+   * Testa conectividade com o backend (endpoint público)
+   */
+  static async testarConexao() {
+    try {
+      const response = await api.get('/api/teste', { 
+        timeout: 3000 // Timeout menor para teste rápido
+      })
+      return {
+        sucesso: true,
+        conectado: true,
+        status: response.status,
+        dados: response.data,
+        mensagem: 'Backend conectado e funcionando'
+      }
+    } catch (error) {
+      return {
+        sucesso: false,
+        conectado: false,
+        status: error.response?.status || 0,
+        mensagem: error.code === 'ECONNREFUSED' ? 
+          'Backend não está rodando' : 
+          'Erro de conectividade'
+      }
+    }
+  }
+
+  /**
+   * Busca dados básicos da API (requer autenticação JWT)
    */
   static async obterDados() {
     try {
@@ -138,32 +210,6 @@ export class DadosService {
         sucesso: false,
         dados: [],
         mensagem: this.tratarErro(error)
-      }
-    }
-  }
-
-  /**
-   * Testa conectividade com o backend
-   */
-  static async testarConexao() {
-    try {
-      const response = await api.get('/api/dados', { 
-        timeout: 3000 // Timeout menor para teste rápido
-      })
-      return {
-        sucesso: true,
-        conectado: true,
-        status: response.status,
-        mensagem: 'Backend conectado e funcionando'
-      }
-    } catch (error) {
-      return {
-        sucesso: false,
-        conectado: false,
-        status: error.response?.status || 0,
-        mensagem: error.code === 'ECONNREFUSED' ? 
-          'Backend não está rodando' : 
-          'Erro de conectividade'
       }
     }
   }

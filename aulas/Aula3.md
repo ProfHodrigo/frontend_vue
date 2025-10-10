@@ -1,8 +1,8 @@
-# Aula 3 — Comunicação com API (Axios)# Aula 3 — Comunicação com API (Axios)## Aula 3 — Comunicação com API (Axios)## Aula 3 — Comunicação com API (Integrando com Flask)
+# Aula 3 — Comunicação com API (Axios)# Aula 3 — Comunicação com API (Axios)# Aula 3 — Comunicação com API (Axios)## Aula 3 — Comunicação com API (Axios)## Aula 3 — Comunicação com API (Integrando com Flask)
 
 
 
-### Objetivos
+## Objetivos
 
 
 
@@ -14,15 +14,15 @@
 
 - Implementar autenticação JWT
 
-- Integrar frontend Vue.js com backend Flask### Objetivos### Objetivos
+- Integrar frontend Vue.js com backend Flask### Objetivos
 
 ---
 
 - Configurar Axios e interceptadores
 
-### Pré-requisitos
+## Pré-requisitos
 
-- Gerenciar estados de loading e erro- Integrar frontend Vue.js com backend Flask- Compreender requisições HTTP no frontend
+- Gerenciar estados de loading e erro
 
 ⚠️ **Antes de começar, configure o backend Flask!**
 
@@ -30,7 +30,7 @@
 
 **Leia e siga:** `SETUP_BACKEND_AULA3.md` (raiz do projeto)
 
-- Configurar Axios e interceptadores- Configurar Axios para comunicação com APIs
+- Integrar frontend Vue.js com backend Flask### Objetivos### Objetivos
 
 Passos essenciais:
 
@@ -38,7 +38,7 @@ Passos essenciais:
 
 1. Instalar Flask-CORS
 
-2. Configurar CORS no backend- Gerenciar estados de loading e erro- Implementar interceptadores para tratamento global
+2. Configurar CORS no backend- Configurar Axios e interceptadores
 
 3. Criar endpoint público `/api/teste`
 
@@ -46,7 +46,7 @@ Passos essenciais:
 
 
 
-**Sem isso, as requisições serão bloqueadas!**- Implementar autenticação JWT- Conectar com os endpoints do Flask backend
+**Sem isso, as requisições serão bloqueadas!**- Gerenciar estados de loading e erro- Integrar frontend Vue.js com backend Flask- Compreender requisições HTTP no frontend
 
 
 
@@ -54,7 +54,7 @@ Passos essenciais:
 
 
 
-### Instalando Axios- Gerenciar estados de loading, sucesso e erro
+## Instalando Axios- Implementar autenticação JWT
 
 
 
@@ -62,7 +62,7 @@ Passos essenciais:
 
 npm install axios
 
-```---- Trabalhar com dados assíncronos de forma reativa
+```- Configurar Axios e interceptadores- Configurar Axios para comunicação com APIs
 
 
 
@@ -70,7 +70,7 @@ O Axios já está em `package.json`, mas certifique-se de ter instalado as depen
 
 
 
-```bash
+```bash---
 
 npm install
 
@@ -78,15 +78,15 @@ npm install
 
 
 
----2. Configurar CORS no backend### Pré-requisitos---
+---2. Configurar CORS no backend- Gerenciar estados de loading e erro- Implementar interceptadores para tratamento global
 
 
 
-### Configuração do Axios3. Criar endpoint público `/api/teste`
+## Configuração do Axios3. Criar endpoint público `/api/teste`
 
 
 
-#### 1. Criar Instância Configurada4. Verificar JWT configurado em `/api/dados`
+### 1. Criar Instância Configurada4. Verificar JWT configurado em `/api/dados`### Pré-requisitos
 
 
 
@@ -94,7 +94,7 @@ npm install
 
 
 
-**Conceitos principais:****Sem isso, as requisições serão bloqueadas!**⚠️ **Antes de começar, configure o backend Flask!**### Introdução às APIs REST
+**Conceitos principais:****Sem isso, as requisições serão bloqueadas!**- Implementar autenticação JWT- Conectar com os endpoints do Flask backend
 
 
 
@@ -102,7 +102,7 @@ npm install
 
 // Instância base
 
-const api = axios.create({---
+const api = axios.create({---⚠️ **Antes de começar, configure o backend Flask!**
 
   baseURL: 'http://localhost:5000',
 
@@ -110,7 +110,7 @@ const api = axios.create({---
 
 })
 
-### Instalando Axios**Leia e siga:** `SETUP_BACKEND_AULA3.md` (raiz do projeto)#### Conceitos Fundamentais
+### Instalando Axios- Gerenciar estados de loading, sucesso e erro
 
 // Interceptor de Requisição (adiciona token)
 
@@ -118,7 +118,7 @@ api.interceptors.request.use(config => {
 
   const token = localStorage.getItem('token')
 
-  if (token) {```bash
+  if (token) {```bash**Leia e siga:** `SETUP_BACKEND_AULA3.md` (raiz do projeto)
 
     config.headers.Authorization = `Bearer ${token}`
 
@@ -126,7 +126,7 @@ api.interceptors.request.use(config => {
 
   return config
 
-})```Passos essenciais:**REST (Representational State Transfer)** é um estilo arquitetural para APIs web:
+})```---- Trabalhar com dados assíncronos de forma reativa
 
 
 
@@ -134,7 +134,7 @@ api.interceptors.request.use(config => {
 
 api.interceptors.response.use(
 
-  response => response,O Axios já está em `package.json`, mas certifique-se de ter instalado as dependências:1. Instalar Flask-CORS
+  response => response,O Axios já está em `package.json`, mas certifique-se de ter instalado as dependências:Passos essenciais:
 
   error => {
 
@@ -142,7 +142,7 @@ api.interceptors.response.use(
 
       localStorage.removeItem('token')
 
-      // Redirecionar para login```bash2. Configurar CORS no backend| Método HTTP | Propósito | Exemplo |
+      // Redirecionar para login```bash
 
     }
 
@@ -150,7 +150,7 @@ api.interceptors.response.use(
 
   }
 
-)```3. Criar endpoint público `/api/teste`|-------------|-----------|---------|
+)```1. Instalar Flask-CORS
 
 ```
 
@@ -158,7 +158,7 @@ api.interceptors.response.use(
 
 **O que são Interceptors?**
 
----4. Verificar JWT configurado em `/api/dados`| **GET** | Buscar dados | `GET /api/produtos` |
+---2. Configurar CORS no backend### Pré-requisitos---
 
 - **Request Interceptor**: Executa antes de cada requisição (adiciona token, logs)
 
@@ -166,15 +166,15 @@ api.interceptors.response.use(
 
 
 
----### Configuração do Axios| **POST** | Criar recurso | `POST /api/produtos` |
+---### Configuração do Axios3. Criar endpoint público `/api/teste`
 
 
 
-#### 2. Criar Service (Camada de Serviço)
+### 2. Criar Service (Camada de Serviço)
 
 
 
-**Veja implementação completa em:** `src/services/DadosService.js`#### 1. Criar Instância Configurada**Sem isso, as requisições serão bloqueadas!**| **PUT** | Atualizar completo | `PUT /api/produtos/1` |
+**Veja implementação completa em:** `src/services/DadosService.js`#### 1. Criar Instância Configurada4. Verificar JWT configurado em `/api/dados`
 
 
 
@@ -182,7 +182,7 @@ api.interceptors.response.use(
 
 
 
-```javascript**Veja implementação completa em:** `src/services/api.js`| **PATCH** | Atualização parcial | `PATCH /api/produtos/1` |
+```javascript**Veja implementação completa em:** `src/services/api.js`
 
 import api from './api'
 
@@ -190,7 +190,7 @@ import api from './api'
 
 export default {
 
-  async testarConexao() {**Conceitos principais:**---| **DELETE** | Remover recurso | `DELETE /api/produtos/1` |
+  async testarConexao() {**Conceitos principais:****Sem isso, as requisições serão bloqueadas!**⚠️ **Antes de começar, configure o backend Flask!**### Introdução às APIs REST
 
     try {
 
@@ -206,7 +206,7 @@ export default {
 
   },
 
-const api = axios.create({### Instalando Axios#### Status HTTP Importantes
+const api = axios.create({---
 
   async buscarDados() {
 
@@ -214,7 +214,7 @@ const api = axios.create({### Instalando Axios#### Status HTTP Importantes
 
     return { sucesso: true, dados: response.data }
 
-  }  timeout: 5000- **200**: Sucesso
+  }  timeout: 5000
 
 }
 
@@ -222,7 +222,7 @@ const api = axios.create({### Instalando Axios#### Status HTTP Importantes
 
 
 
-**Vantagens do Service:**```bash- **201**: Criado com sucesso  
+**Vantagens do Service:**### Instalando Axios**Leia e siga:** `SETUP_BACKEND_AULA3.md` (raiz do projeto)#### Conceitos Fundamentais
 
 
 
@@ -230,7 +230,7 @@ const api = axios.create({### Instalando Axios#### Status HTTP Importantes
 
 - Facilita manutenção
 
-- Trata erros de forma consistenteapi.interceptors.request.use(config => {npm install axios- **400**: Erro de validação
+- Trata erros de forma consistenteapi.interceptors.request.use(config => {
 
 
 
@@ -238,7 +238,7 @@ const api = axios.create({### Instalando Axios#### Status HTTP Importantes
 
 
 
-### Usando no Componente  if (token) {```- **401**: Não autorizado
+## Usando no Componente  if (token) {```bash
 
 
 
@@ -246,7 +246,7 @@ const api = axios.create({### Instalando Axios#### Status HTTP Importantes
 
 
 
-**Padrão básico:**  }- **404**: Não encontrado
+**Padrão básico:**  }npm install axios
 
 
 
@@ -254,7 +254,7 @@ const api = axios.create({### Instalando Axios#### Status HTTP Importantes
 
 <template>
 
-  <div>})O Axios já está em `package.json`, mas certifique-se de ter instalado as dependências:- **500**: Erro interno do servidor
+  <div>})```Passos essenciais:**REST (Representational State Transfer)** é um estilo arquitetural para APIs web:
 
     <button @click="buscar" :disabled="carregando">
 
@@ -270,7 +270,7 @@ const api = axios.create({### Instalando Axios#### Status HTTP Importantes
 
     </div>
 
-      response => response,```bash---
+      response => response,O Axios já está em `package.json`, mas certifique-se de ter instalado as dependências:1. Instalar Flask-CORS
 
     <div v-if="erro" class="erro">
 
@@ -278,7 +278,7 @@ const api = axios.create({### Instalando Axios#### Status HTTP Importantes
 
     </div>
 
-  </div>    if (error.response?.status === 401) {npm install
+  </div>    if (error.response?.status === 401) {
 
 </template>
 
@@ -286,7 +286,7 @@ const api = axios.create({### Instalando Axios#### Status HTTP Importantes
 
 <script>
 
-import DadosService from '../services/DadosService'      // Redirecionar para login```### Configuração do Backend Flask (CORS)
+import DadosService from '../services/DadosService'      // Redirecionar para login```bash2. Configurar CORS no backend| Método HTTP | Propósito | Exemplo |
 
 
 
@@ -294,7 +294,7 @@ export default {    }
 
   data() {
 
-    return {    return Promise.reject(error)
+    return {    return Promise.reject(error)npm install
 
       carregando: false,
 
@@ -302,7 +302,7 @@ export default {    }
 
       erro: null
 
-    })---Antes de começar, precisamos habilitar CORS no Flask para permitir requisições do frontend.
+    })```3. Criar endpoint público `/api/teste`|-------------|-----------|---------|
 
   },
 
@@ -318,7 +318,7 @@ export default {    }
 
       const resposta = await DadosService.buscarDados()
 
-      ### Configuração do Axios**Instalar Flask-CORS:**
+      ---4. Verificar JWT configurado em `/api/dados`| **GET** | Buscar dados | `GET /api/produtos` |
 
       if (resposta.sucesso) {
 
@@ -326,7 +326,7 @@ export default {    }
 
       } else {
 
-        this.erro = resposta.mensagem- **Response Interceptor**: Executa após cada resposta (trata erros globalmente)```bash
+        this.erro = resposta.mensagem- **Response Interceptor**: Executa após cada resposta (trata erros globalmente)
 
       }
 
@@ -334,7 +334,7 @@ export default {    }
 
       this.carregando = false
 
-    }---#### 1. Criar Instância Configuradacd backend_flask
+    }---### Configuração do Axios| **POST** | Criar recurso | `POST /api/produtos` |
 
   }
 
@@ -342,7 +342,7 @@ export default {    }
 
 </script>
 
-```#### 2. Criar Service (Camada de Serviço)pip install flask-cors
+```#### 2. Criar Service (Camada de Serviço)
 
 
 
@@ -350,7 +350,7 @@ export default {    }
 
 
 
-### Padrão de Estados Assíncronos**Veja implementação completa em:** `src/services/DadosService.js`**`src/services/api.js`:**```
+## Padrão de Estados Assíncronos**Veja implementação completa em:** `src/services/DadosService.js`#### 1. Criar Instância Configurada**Sem isso, as requisições serão bloqueadas!**| **PUT** | Atualizar completo | `PUT /api/produtos/1` |
 
 
 
@@ -366,7 +366,7 @@ data() {
 
     carregando: false,  // Estado de loading
 
-    erro: null,         // Mensagem de erro```javascript```javascript**Atualizar `app/__init__.py`:**
+    erro: null,         // Mensagem de erro```javascript**Veja implementação completa em:** `src/services/api.js`| **PATCH** | Atualização parcial | `PATCH /api/produtos/1` |
 
     dados: null         // Dados recebidos
 
@@ -374,11 +374,393 @@ data() {
 
 }
 
-```import axios from 'axios'```python
+```
 
 
 
 **Ciclo de vida de uma requisição:**export default {
+
+
+
+1. **Início**: `carregando = true`, `erro = null`  async testarConexao() {**Conceitos principais:**---| **DELETE** | Remover recurso | `DELETE /api/produtos/1` |
+
+2. **Sucesso**: `dados = response.data`
+
+3. **Erro**: `erro = error.message`    try {
+
+4. **Fim**: `carregando = false`
+
+      const response = await api.get('/api/teste')
+
+---
+
+      return { sucesso: true, dados: response.data }
+
+## Autenticação JWT
+
+    } catch (erro) {```javascript
+
+### Login
+
+      return { sucesso: false, mensagem: erro.message }
+
+```javascript
+
+// services/AuthService.js    }// Instância base
+
+async login(email, senha) {
+
+  const response = await api.post('/api/login', { email, senha })  },
+
+  const token = response.data.token
+
+  const api = axios.create({### Instalando Axios#### Status HTTP Importantes
+
+  // Salva token
+
+  localStorage.setItem('token', token)  async buscarDados() {
+
+  
+
+  return token    const response = await api.get('/api/dados')  baseURL: 'http://localhost:5000',
+
+}
+
+```    return { sucesso: true, dados: response.data }
+
+
+
+### Logout  }  timeout: 5000- **200**: Sucesso
+
+
+
+```javascript}
+
+logout() {
+
+  localStorage.removeItem('token')```})
+
+  // Redirecionar para login
+
+}
+
+```
+
+**Vantagens do Service:**```bash- **201**: Criado com sucesso  
+
+### Requisições Autenticadas
+
+
+
+O **interceptor** já adiciona o token automaticamente!
+
+- Centraliza lógica de API// Interceptor de Requisição (adiciona token)
+
+```javascript
+
+// Não precisa fazer nada, o interceptor faz:- Facilita manutenção
+
+// headers: { Authorization: 'Bearer TOKEN' }
+
+```- Trata erros de forma consistenteapi.interceptors.request.use(config => {npm install axios- **400**: Erro de validação
+
+
+
+---
+
+
+
+## Endpoints do Backend---  const token = localStorage.getItem('token')
+
+
+
+Segundo `SETUP_BACKEND_AULA3.md`:
+
+
+
+| Método | Endpoint       | Autenticação | Descrição              |### Usando no Componente  if (token) {```- **401**: Não autorizado
+
+|--------|----------------|--------------|------------------------|
+
+| GET    | `/api/teste`   | ❌ Não       | Testar conexão         |
+
+| GET    | `/api/dados`   | ✅ JWT       | Buscar dados protegidos|
+
+| POST   | `/api/dados`   | ✅ JWT       | Enviar dados           |**Veja implementação completa em:** `src/components/TesteAPI.vue`    config.headers.Authorization = `Bearer ${token}`
+
+| POST   | `/api/login`   | ❌ Não       | Login (retorna JWT)    |
+
+
+
+---
+
+**Padrão básico:**  }- **404**: Não encontrado
+
+## Checklist de Implementação
+
+
+
+- [ ] Backend configurado (CORS + endpoints)
+
+- [ ] Axios instalado```vue  return config
+
+- [ ] `api.js` criado com interceptadores
+
+- [ ] Services criados<template>
+
+- [ ] Estados assíncronos implementados
+
+- [ ] Requisições GET/POST funcionando  <div>})O Axios já está em `package.json`, mas certifique-se de ter instalado as dependências:- **500**: Erro interno do servidor
+
+- [ ] Autenticação JWT funcionando
+
+- [ ] Erros sendo tratados    <button @click="buscar" :disabled="carregando">
+
+
+
+---      {{ carregando ? 'Carregando...' : 'Buscar' }}
+
+
+
+## Tratamento de Erros Comuns    </button>
+
+
+
+### 1. CORS Error    // Interceptor de Resposta (trata erros)
+
+
+
+```    <div v-if="dados">
+
+Access to XMLHttpRequest has been blocked by CORS policy
+
+```      {{ dados }}api.interceptors.response.use(
+
+
+
+**Solução:** Configure Flask-CORS no backend (ver `SETUP_BACKEND_AULA3.md`)    </div>
+
+
+
+---      response => response,```bash---
+
+
+
+### 2. 401 Unauthorized    <div v-if="erro" class="erro">
+
+
+
+```json      {{ erro }}  error => {
+
+{ "mensagem": "Token inválido ou ausente" }
+
+```    </div>
+
+
+
+**Solução:**  </div>    if (error.response?.status === 401) {npm install
+
+
+
+- Faça login primeiro</template>
+
+- Verifique se token está no localStorage
+
+- Verifique se interceptor está adicionando o token      localStorage.removeItem('token')
+
+
+
+---<script>
+
+
+
+### 3. Network Errorimport DadosService from '../services/DadosService'      // Redirecionar para login```### Configuração do Backend Flask (CORS)
+
+
+
+**Soluções:**
+
+
+
+- Backend está rodando? (`python app.py`)export default {    }
+
+- URL correta no `baseURL`?
+
+- Firewall bloqueando?  data() {
+
+
+
+---    return {    return Promise.reject(error)
+
+
+
+## Arquivos da Aula 3      carregando: false,
+
+
+
+📁 **Arquivos criados:**      dados: null,  }
+
+
+
+1. `src/services/api.js` - Configuração do Axios com interceptadores      erro: null
+
+2. `src/services/DadosService.js` - Métodos de requisição
+
+3. `src/components/TesteAPI.vue` - Interface de teste    })---Antes de começar, precisamos habilitar CORS no Flask para permitir requisições do frontend.
+
+4. `SETUP_BACKEND_AULA3.md` - Instruções de configuração do backend
+
+  },
+
+💡 **Dica:** Sempre teste endpoints com Postman/Insomnia primeiro!
+
+  methods: {```
+
+---
+
+    async buscar() {
+
+## Conceitos-Chave
+
+      this.carregando = true
+
+✅ **Axios:**
+
+      this.erro = null
+
+- Cliente HTTP baseado em Promises
+
+- Suporta interceptadores      **O que são Interceptors?**
+
+- Conversão automática JSON
+
+      const resposta = await DadosService.buscarDados()
+
+✅ **Interceptadores:**
+
+      ### Configuração do Axios**Instalar Flask-CORS:**
+
+- Request: adiciona token, logs
+
+- Response: trata erros globalmente      if (resposta.sucesso) {
+
+
+
+✅ **Services:**        this.dados = resposta.dados- **Request Interceptor**: Executa antes de cada requisição (adiciona token, logs)
+
+
+
+- Camada de abstração para API      } else {
+
+- Facilita manutenção
+
+- Centraliza lógica de requisições        this.erro = resposta.mensagem- **Response Interceptor**: Executa após cada resposta (trata erros globalmente)```bash
+
+
+
+✅ **Estados Assíncronos:**      }
+
+
+
+- Loading: mostra spinner      
+
+- Erro: mostra mensagem
+
+- Sucesso: renderiza dados      this.carregando = false
+
+
+
+✅ **JWT:**    }---#### 1. Criar Instância Configuradacd backend_flask
+
+
+
+- Token de autenticação  }
+
+- Enviado no header `Authorization`
+
+- Validado pelo backend}
+
+
+
+---</script>
+
+
+
+## Comandos Git```#### 2. Criar Service (Camada de Serviço)pip install flask-cors
+
+
+
+```bash
+
+git checkout -b aula-03-api
+
+git add .---
+
+git commit -m "Aula 3 - Comunicação com API"
+
+git push -u origin aula-03-api
+
+```
+
+### Padrão de Estados Assíncronos**Veja implementação completa em:** `src/services/DadosService.js`**`src/services/api.js`:**```
+
+---
+
+
+
+## Próxima Aula
+
+Todo componente que faz requisições deve ter:
+
+**Aula 4 - State Management (Pinia):**
+
+
+
+- Gerenciamento de estado global
+
+- Stores```javascript**Exemplo simplificado:**
+
+- Actions e Getters
+
+- Compartilhar dados entre componentesdata() {
+
+
+
+---  return {
+
+
+
+## Recursos    carregando: false,  // Estado de loading
+
+
+
+📚 **Documentação:**    erro: null,         // Mensagem de erro```javascript```javascript**Atualizar `app/__init__.py`:**
+
+
+
+- [Axios](https://axios-http.com/docs/intro)    dados: null         // Dados recebidos
+
+- [Interceptors](https://axios-http.com/docs/interceptors)
+
+- [Flask-CORS](https://flask-cors.readthedocs.io/)  }import api from './api'
+
+- [JWT](https://jwt.io/)
+
+}
+
+🔧 **Ferramentas:**
+
+```import axios from 'axios'```python
+
+- Postman: teste de APIs
+
+- Vue DevTools: debug de requisições
+
+- Browser Network Tab: inspecionar requests
+
+**Ciclo de vida de uma requisição:**export default {
+
+💡 **Dica:** Use `console.log` nos interceptadores para debug!
 
 
 

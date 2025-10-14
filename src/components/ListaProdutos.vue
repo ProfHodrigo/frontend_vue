@@ -44,12 +44,12 @@
     </div>
 
     <!-- Modal de visualização -->
-    <div v-if="produtoSelecionado" class="modal fade show d-block" style="background: rgba(0,0,0,0.5)" @click.self="produtoSelecionado = null">
+    <div v-if="produtoSelecionado" class="modal fade show d-block" style="background: rgba(0,0,0,0.5)" @click.self="fecharModal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">{{ produtoSelecionado.nome }}</h5>
-            <button @click="produtoSelecionado = null" class="btn-close"></button>
+            <button @click="fecharModal" class="btn-close"></button>
           </div>
           <div class="modal-body">
             <p>{{ produtoSelecionado.descricao }}</p>
@@ -69,7 +69,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button @click="produtoSelecionado = null" class="btn btn-secondary">Fechar</button>
+            <button @click="fecharModal" class="btn btn-secondary">Fechar</button>
             <button 
               @click="adicionarAoCarrinho(produtoSelecionado)"
               class="btn btn-primary"
@@ -97,7 +97,7 @@ export default {
     return {
       pesquisa: '',
       filtroCategoria: '',
-      produtoSelecionado: null,
+  produtoSelecionado: null,
       produtos: [
         { id: 1, nome: 'Notebook Dell', descricao: 'Notebook para trabalho', preco: 2500.00, estoque: 5, categoria: 'eletronicos' },
         { id: 2, nome: 'Mouse Logitech', descricao: 'Mouse sem fio', preco: 45.90, estoque: 0, categoria: 'eletronicos' },
@@ -130,6 +130,10 @@ export default {
     },
     visualizarProduto(produto) {
       this.produtoSelecionado = produto
+      this.$emit('visualizar-produto', produto)
+    },
+    fecharModal() {
+      this.produtoSelecionado = null
     },
     categoriaLabel(categoria) {
       const categorias = {

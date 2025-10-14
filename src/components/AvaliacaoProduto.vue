@@ -1,10 +1,11 @@
 <template>
   <div class="avaliacao-produto card">
-    <div class="card-header bg-warning text-dark">
+    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
       <h4 class="mb-0">
         <i class="fas fa-star me-2"></i>
         Exercício 1 - Sistema de Avaliações
       </h4>
+      <button class="btn btn-sm btn-outline-dark ms-2" style="font-weight:bold;" @click="$emit('fechar')" title="Fechar avaliação">-</button>
     </div>
     <div class="card-body">
       <!-- Informações do Produto -->

@@ -11,100 +11,15 @@
       </div>
     </header>
 
-    <!-- Conteúdo principal -->
+    <!-- Exercício 1: Sistema de Avaliações -->
     <div class="container">
-      <!-- Navegação entre seções -->
-      <div class="mb-4">
-        <div class="btn-group w-100" role="group">
-          <button 
-            @click="secaoAtiva = 'lista'"
-            class="btn"
-            :class="secaoAtiva === 'lista' ? 'btn-primary' : 'btn-outline-primary'"
-          >
-            <i class="fas fa-shopping-bag me-2"></i>
-            Lista de Produtos
-          </button>
-          <button 
-            @click="secaoAtiva = 'avaliacao'"
-            class="btn"
-            :class="secaoAtiva === 'avaliacao' ? 'btn-primary' : 'btn-outline-primary'"
-          >
-            <i class="fas fa-star me-2"></i>
-            Avaliações
-          </button>
-          <button 
-            @click="secaoAtiva = 'carrinho'"
-            class="btn"
-            :class="secaoAtiva === 'carrinho' ? 'btn-primary' : 'btn-outline-primary'"
-          >
-            <i class="fas fa-shopping-cart me-2"></i>
-            Carrinho
-          </button>
-        </div>
-      </div>
-
-      <!-- Seção: Lista de Produtos -->
-      <div v-show="secaoAtiva === 'lista'">
-        <ListaProdutos @produto-adicionado="handleProdutoAdicionado" />
-      </div>
-
-      <!-- Seção: Avaliação de Produto -->
-      <div v-show="secaoAtiva === 'avaliacao'">
+      <ListaProdutos @produto-adicionado="handleProdutoAdicionado" @visualizar-produto="handleVisualizarProduto" />
         <AvaliacaoProduto 
-          :produto="produtoExemplo"
+          v-if="produtoSelecionado"
+          :produto="produtoSelecionado"
           @avaliacao-adicionada="handleAvaliacaoAdicionada"
+          @fechar="produtoSelecionado = null"
         />
-      </div>
-
-      <!-- Seção: Carrinho de Compras -->
-      <div v-show="secaoAtiva === 'carrinho'">
-        <CarrinhoCompras 
-          @finalizar-compra="handleFinalizarCompra"
-          @voltar-compras="secaoAtiva = 'lista'"
-        />
-      </div>
-
-      <!-- Sidebar com informações -->
-      <div class="row mt-4">
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="mb-0">
-                <i class="fas fa-info-circle me-2"></i>
-                Aula 2 - Conceitos
-              </h5>
-            </div>
-            <div class="card-body">
-              <ul class="list-unstyled">
-                <li><i class="fas fa-check text-success me-2"></i>Diretivas (v-if, v-for, v-show)</li>
-                <li><i class="fas fa-check text-success me-2"></i>Componentes Reutilizáveis</li>
-                <li><i class="fas fa-check text-success me-2"></i>Props e Emits</li>
-                <li><i class="fas fa-check text-success me-2"></i>Comunicação entre Componentes</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">
-              <h6 class="mb-0">
-                <i class="fas fa-list-check me-2"></i>
-                Componentes Criados
-              </h6>
-            </div>
-            <div class="card-body">
-              <ul class="list-unstyled small">
-                <li><i class="fas fa-puzzle-piece text-primary me-2"></i>CartaoProduto.vue</li>
-                <li><i class="fas fa-puzzle-piece text-primary me-2"></i>ListaProdutos.vue</li>
-                <li><i class="fas fa-puzzle-piece text-primary me-2"></i>AvaliacaoProduto.vue</li>
-                <li><i class="fas fa-puzzle-piece text-primary me-2"></i>ItemTarefa.vue</li>
-                <li><i class="fas fa-puzzle-piece text-primary me-2"></i>CarrinhoCompras.vue</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Footer -->
@@ -122,35 +37,31 @@
 </template>
 
 <script>
+
 import ListaProdutos from './components/ListaProdutos.vue'
 import AvaliacaoProduto from './components/AvaliacaoProduto.vue'
-import CarrinhoCompras from './components/CarrinhoCompras.vue'
 
 export default {
   name: 'App',
   components: {
     ListaProdutos,
-    AvaliacaoProduto,
-    CarrinhoCompras
+    AvaliacaoProduto
   },
   data() {
     return {
-      secaoAtiva: 'lista',
-      produtoExemplo: {
-        nome: 'Notebook Dell Inspiron',
-        descricao: 'Notebook de alta performance para trabalho e estudos'
-      }
+      produtoSelecionado: null
     }
   },
   methods: {
     handleProdutoAdicionado(produto) {
-      console.log('Produto adicionado ao carrinho:', produto)
+      // Aqui você pode implementar lógica para adicionar ao carrinho, se desejar
+      alert(`${produto.nome} adicionado ao carrinho!`)
+    },
+    handleVisualizarProduto(produto) {
+      this.produtoSelecionado = produto
     },
     handleAvaliacaoAdicionada(avaliacao) {
       console.log('Nova avaliação:', avaliacao)
-    },
-    handleFinalizarCompra(resumo) {
-      console.log('Compra finalizada:', resumo)
     }
   }
 }

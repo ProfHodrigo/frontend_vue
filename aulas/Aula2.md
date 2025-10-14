@@ -100,7 +100,7 @@ export default {
 </script>
 ```
 
-**⚠️ Importante:** Sempre use `:key` com valor único!
+** Importante:** Sempre use `:key` com valor único!
 
 ---
 
@@ -340,14 +340,14 @@ Crie `CarrinhoCompras.vue`:
 
 ### Componentes da Aula 2
 
-📁 **Arquivos criados:**
+ **Arquivos criados:**
 1. `src/components/CartaoProduto.vue` - Componente de produto reutilizável
 2. `src/components/ListaProdutos.vue` - Lista com filtros
 3. `src/components/AvaliacaoProduto.vue` - Sistema de avaliações (Ex. 1)
 4. `src/components/ItemTarefa.vue` - Item de tarefa reutilizável (Ex. 2)
 5. `src/components/CarrinhoCompras.vue` - Carrinho completo (Ex. 3)
 
-💡 **Dica:** Abra os arquivos `.vue` para ver a implementação completa com estilos CSS!
+ **Dica:** Abra os arquivos `.vue` para ver a implementação completa com estilos CSS!
 
 ---
 
@@ -373,29 +373,6 @@ Crie `CarrinhoCompras.vue`:
 
 ---
 
-### Checklist
-
-- [ ] v-if, v-else, v-show funcionando
-- [ ] v-for com arrays e objetos
-- [ ] Props validados corretamente
-- [ ] Emits configurados
-- [ ] Computed properties para filtros
-- [ ] Componentes reutilizáveis criados
-- [ ] Exercícios concluídos
-
----
-
-### Comandos Git
-
-```bash
-git checkout -b aula-02-componentes
-git add .
-git commit -m "Aula 2 - Componentes e Diretivas"
-git push -u origin aula-02-componentes
-```
-
----
-
 ### Próxima Aula
 
 **Aula 3 - Comunicação com API:**
@@ -409,10 +386,10 @@ git push -u origin aula-02-componentes
 
 ### Recursos
 
-📚 **Documentação:**
+ **Documentação:**
 - [Vue Directives](https://vuejs.org/api/built-in-directives.html)
 - [Components](https://vuejs.org/guide/essentials/component-basics.html)
 - [Props](https://vuejs.org/guide/components/props.html)
 - [Events](https://vuejs.org/guide/components/events.html)
 
-💡 **Dica:** Use Vue DevTools para inspecionar props e events!
+ **Dica:** Use Vue DevTools para inspecionar props e events!

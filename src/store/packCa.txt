@@ -1,3 +1,11 @@
+<!--
+  CarrinhoCompras.vue — Exemplo de implementação para Atividade 3
+  - Este componente deve ser exibido dentro do slider lateral do App.vue
+  - Use emits para finalizar compra ou voltar para as compras
+  - Integre com o App.vue usando props e eventos
+  - Adapte os dados conforme a estrutura do seu app
+  - Não entregue este arquivo diretamente aos alunos!
+-->
 <template>
   <div class="carrinho-compras card">
     <div class="card-header bg-success text-white">

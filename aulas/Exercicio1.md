@@ -5,7 +5,68 @@ Criar um componente Vue chamado `AvaliacaoProduto.vue` que permita ao usuário a
 
 ---
 
-## Passo a Passo Detalhado
+## Explicação dos Requisitos e das Diretivas Vue
+
+### 1. Receber produto como prop e reutilização de componentes
+- O componente `AvaliacaoProduto` é **reutilizável**: pode ser usado para qualquer produto, pois recebe o objeto `produto` como prop obrigatória.
+- Exemplo de uso com **v-bind** (dois pontos):
+  ```vue
+  <AvaliacaoProduto :produto="{ id: 1, nome: 'Notebook' }" @avaliado="onAvaliado" />
+  ```
+  Aqui, `:produto` é um atalho para `v-bind:produto`, que faz o binding dinâmico do objeto.
+
+### 2. Renderizar estrelas dinamicamente com v-for
+- O `v-for` é usado para **renderizar 5 estrelas**:
+  ```vue
+  <span v-for="estrela in 5" :key="estrela">★</span>
+  ```
+  Isso cria 5 elementos de estrela, um para cada valor de 1 a 5.
+
+### 3. Mostrar/ocultar elementos com v-if
+- O `v-if` é usado para **mostrar a média** apenas se houver avaliações:
+  ```vue
+  <p v-if="media > 0">Média: ...</p>
+  ```
+- Também é usado para exibir o botão de remover avaliação apenas se o usuário já avaliou:
+  ```vue
+  <button v-if="avaliacaoUsuario > 0">Remover minha avaliação</button>
+  ```
+
+### 4. Controle de input com v-model
+- O `v-model` faz o **two-way binding** entre campos de formulário e o estado do componente.
+- No exemplo, se você quiser adicionar um campo de comentário, usaria:
+  ```vue
+  <input v-model="novoComentario" />
+  ```
+  Assim, o valor do input e da variável `novoComentario` ficam sempre sincronizados.
+
+### 5. v-bind para atributos dinâmicos
+- O `v-bind` (ou `:`) é usado para **atributos dinâmicos**:
+  ```vue
+  <span :class="['estrela', { ativa: estrela <= avaliacaoUsuario }]">★</span>
+  ```
+  Aqui, a classe `ativa` só aparece se a estrela for menor ou igual à nota do usuário.
+
+### 6. Componentes reutilizáveis
+- O `AvaliacaoProduto` pode ser usado em qualquer lugar do app para qualquer produto.
+- Você pode criar outros componentes reutilizáveis, como um cartão de produto:
+  ```vue
+  <CartaoProduto :produto="produto" />
+  ```
+  E uma lista de produtos:
+  ```vue
+  <ListaProdutos :produtos="produtos" />
+  ```
+
+### 7. Emitir evento ao avaliar
+- O método `avaliar` emite o evento `avaliado` com o produto e a nota:
+  ```js
+  this.$emit('avaliado', { produto: this.produto, nota })
+  ```
+- O componente pai pode escutar esse evento para registrar avaliações.
+
+---
+
 
 ### 1. Estrutura do Componente
 Crie o arquivo `src/components/AvaliacaoProduto.vue`.
@@ -80,38 +141,7 @@ button { margin-top: 0.5rem; }
 
 ---
 
-## Explicação dos Requisitos
-
-### 1. Receber produto como prop
-- O componente espera um objeto `produto` como prop obrigatória.
-- Exemplo de uso:
-  ```vue
-  <AvaliacaoProduto :produto="{ id: 1, nome: 'Notebook' }" @avaliado="onAvaliado" />
-  ```
-
-### 2. Permitir avaliar de 1 a 5 estrelas
-- Usa um `v-for` para renderizar 5 estrelas.
-- O clique em uma estrela chama o método `avaliar(estrela)`.
-- O usuário pode clicar em qualquer estrela para dar a nota correspondente.
-- O estado `hover` permite efeito visual ao passar o mouse.
-
-### 3. Calcular média com computed
-- A propriedade computada `media` calcula a média das notas do array `avaliacoes`.
-- Exibe a média e o número de avaliações.
-
-### 4. Emitir evento ao avaliar
-- O método `avaliar` emite o evento `avaliado` com o produto e a nota:
-  ```js
-  this.$emit('avaliado', { produto: this.produto, nota })
-  ```
-- O componente pai pode escutar esse evento para registrar avaliações.
-
-### 5. Remover avaliação do usuário (extra)
-- O botão "Remover minha avaliação" permite desfazer a última avaliação do usuário.
-
----
-
-## Dicas e Boas Práticas
+## Boas Práticas
 - Use `scoped` no `<style>` para evitar conflitos de CSS.
 - Sempre valide as props recebidas.
 - O array `avaliacoes` pode ser compartilhado via prop ou store para avaliações globais.
@@ -119,7 +149,7 @@ button { margin-top: 0.5rem; }
 
 ---
 
-## Exemplo de Uso em App.vue
+## Exemplo de implementação no App.vue
 ```vue
 <AvaliacaoProduto :produto="produto" @avaliado="registrarAvaliacao" />
 ```
@@ -133,6 +163,3 @@ methods: {
 ```
 
 ---
-
-## Veja implementação completa em:
-`src/components/AvaliacaoProduto.vue`

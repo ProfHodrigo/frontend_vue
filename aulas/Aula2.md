@@ -305,6 +305,7 @@ export default {
 ### Exercícios Práticos
 
 #### Exercício 1: Sistema de Avaliações
+
 Crie `AvaliacaoProduto.vue`:
 - Receba produto como prop
 - Permita avaliar de 1 a 5 estrelas
@@ -315,18 +316,8 @@ Crie `AvaliacaoProduto.vue`:
 
 ---
 
-#### Exercício 2: Lista de Tarefas Avançada
-Crie `ItemTarefa.vue`:
-- Componente separado para cada tarefa
-- Filtros: Todas, Pendentes, Concluídas
-- Edição inline
-- Drag and drop (opcional)
+#### Exercício 2: Carrinho de Compras
 
-**Veja implementação completa em:** `src/components/ItemTarefa.vue`
-
----
-
-#### Exercício 3: Carrinho de Compras
 Crie `CarrinhoCompras.vue`:
 - Liste produtos adicionados
 - Calcule subtotais e total
@@ -334,7 +325,15 @@ Crie `CarrinhoCompras.vue`:
 - Cupom de desconto
 - Botão finalizar compra
 
-**Veja implementação completa em:** `src/components/CarrinhoCompras.vue`
+---
+
+#### Exercício 3: Lista de Tarefas Avançada
+
+Crie `ItemTarefa.vue`:
+- Componente separado para cada tarefa
+- Filtros: Todas, Pendentes, Concluídas
+- Edição inline
+- Drag and drop (opcional)
 
 ---
 
@@ -344,8 +343,9 @@ Crie `CarrinhoCompras.vue`:
 1. `src/components/CartaoProduto.vue` - Componente de produto reutilizável
 2. `src/components/ListaProdutos.vue` - Lista com filtros
 3. `src/components/AvaliacaoProduto.vue` - Sistema de avaliações (Ex. 1)
-4. `src/components/ItemTarefa.vue` - Item de tarefa reutilizável (Ex. 2)
-5. `src/components/CarrinhoCompras.vue` - Carrinho completo (Ex. 3)
+4. `src/components/CarrinhoCompras.vue` - Carrinho completo (Ex. 2)
+5. `src/components/ItemTarefa.vue` - Item de tarefa reutilizável (Ex. 3)
+
 
  **Dica:** Abra os arquivos `.vue` para ver a implementação completa com estilos CSS!
 

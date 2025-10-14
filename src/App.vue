@@ -40,7 +40,7 @@
           </div>
           <div class="p-4 text-center text-muted">
             <i class="fas fa-box-open fa-3x mb-3"></i>
-            <p>O carrinho será implementado na Atividade 3.</p>
+            <p>O carrinho será implementado na Atividade 2.</p>
           </div>
         </div>
       </transition>

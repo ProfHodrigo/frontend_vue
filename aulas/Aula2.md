@@ -392,4 +392,8 @@ Crie `CarrinhoCompras.vue`:
 - [Props](https://vuejs.org/guide/components/props.html)
 - [Events](https://vuejs.org/guide/components/events.html)
 
+<<<<<<< HEAD
  **Dica:** Use Vue DevTools para inspecionar props e events!
+=======
+ **Dica:** Use Vue DevTools para inspecionar props e events!
+>>>>>>> 092a9bd470c482dd14eaeb7abce09f54875eb473

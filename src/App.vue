@@ -85,8 +85,7 @@ export default {
       this.carrinhoAberto = false
     },
     handleProdutoAdicionado(produto) {
-      // Aqui você pode implementar lógica para adicionar ao carrinho, se desejar
-      alert(`${produto.nome} adicionado ao carrinho!`)
+      // Aqui vocês podem implementar a lógica de adição ao carrinho
     },
     handleVisualizarProduto(produto) {
       this.produtoSelecionado = produto

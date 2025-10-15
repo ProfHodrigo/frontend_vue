@@ -243,73 +243,6 @@ E usar no template:
 
 ---
 
-## Funcionalidades Extras (Desafio)
-
-### Desafio 1: Paginação
-
-Mostre apenas 10 posts por página com botões "Anterior" e "Próxima":
-
-```javascript
-data() {
-  return {
-    paginaAtual: 1,
-    postsPorPagina: 10
-  }
-},
-computed: {
-  postsExibidos() {
-    const inicio = (this.paginaAtual - 1) * this.postsPorPagina
-    const fim = inicio + this.postsPorPagina
-    return this.postsFiltrados.slice(inicio, fim)
-  },
-  totalPaginas() {
-    return Math.ceil(this.postsFiltrados.length / this.postsPorPagina)
-  }
-}
-```
-
-### Desafio 2: Modal de Detalhes
-
-Ao clicar em um post, abra um modal mostrando o conteúdo completo.
-
-### Desafio 3: Ordenação
-
-Adicione botões para ordenar posts por:
-- Mais recentes (id decrescente)
-- Mais antigos (id crescente)
-- Alfabético (título)
-
-```javascript
-methods: {
-  ordenarPor(campo) {
-    this.posts.sort((a, b) => {
-      if (campo === 'titulo') {
-        return a.title.localeCompare(b.title)
-      }
-      return a[campo] - b[campo]
-    })
-  }
-}
-```
-
----
-
-## Checklist de Implementação
-
-- [ ] Componente `ListaPosts.vue` criado
-- [ ] Axios importado
-- [ ] Estados (`carregando`, `erro`, `posts`, `filtro`) declarados
-- [ ] Método `buscarPosts()` implementado
-- [ ] Hook `mounted()` chama `buscarPosts()`
-- [ ] Computed `postsFiltrados` implementado
-- [ ] Template com 4 estados (loading, erro, sucesso, vazio)
-- [ ] Campo de busca com `v-model`
-- [ ] Lista de cards com `v-for`
-- [ ] Botão recarregar funcionando
-- [ ] Estilos aplicados
-
----
-
 ## Testando
 
 1. **Teste normal**: Deve carregar e exibir 100 posts
@@ -343,7 +276,7 @@ methods: {
 
 ## Próximo Exercício
 
-**Exercício 3:** Criar um CRUD completo de produtos com:
+**Exercício 3:** Criar um CRUD simples de produtos com:
 - Listar
 - Criar
 - Editar
@@ -360,4 +293,4 @@ methods: {
 - [Computed Properties](https://vuejs.org/guide/essentials/computed.html)
 - [Lifecycle Hooks](https://vuejs.org/guide/essentials/lifecycle.html)
 
-💡 **Dica:** Se tiver dúvidas, consulte o Exercício 1 como referência!
+**Dica:** Se tiver dúvidas, consulte o Exercício 1 como referência!

@@ -2,13 +2,13 @@
 
 ## Objetivo
 
-Neste exercício você vai **aprender na prática** como fazer sua primeira requisição HTTP usando Axios. Vamos criar um componente simples que busca dados de uma API pública e exibe na tela.
+Neste exercício você vai **aprender na prática** como fazer nossa primeira requisição HTTP usando Axios. Vamos criar um componente simples que busca dados de uma API pública e exibe na tela.
 
-**Este é um guia completo e detalhado!** Siga cada passo e você terá um componente funcionando ao final.
+**Este é um guia completo e detalhado!** Seguindo cada passo teremos um componente funcionando ao final.
 
 ---
 
-## 📋 O que vamos fazer?
+## O que vamos fazer?
 
 Criar um componente chamado `BuscadorUsuario.vue` que:
 - ✅ Busca informações de usuários de uma API pública
@@ -19,11 +19,11 @@ Criar um componente chamado `BuscadorUsuario.vue` que:
 
 ---
 
-## 🌐 API que vamos usar
+## API que vamos usar
 
 **API Pública:** `https://randomuser.me/api/`
 
-Esta API retorna dados de usuários fictícios. É perfeita para aprender!
+Esta API retorna dados de usuários fictícios.
 
 **Exemplo de resposta:**
 ```json
@@ -69,15 +69,15 @@ added 1 package, and audited X packages in Xs
 
 ---
 
-## 📁 Passo 2: Criar o arquivo do componente
+## Passo 2: Criar o arquivo do componente
 
 Crie um novo arquivo chamado `BuscadorUsuario.vue` dentro da pasta `src/components/`.
 
-**Caminho completo:** `src/components/BuscadorUsuario.vue`
+**Caminho:** `src/components/BuscadorUsuario.vue`
 
 ---
 
-## 📝 Passo 3: Estrutura Básica do Template
+## Passo 3: Estrutura Básica do Template
 
 Vamos começar pelo template (a parte visual do componente).
 
@@ -89,7 +89,7 @@ Cole este código no arquivo `BuscadorUsuario.vue`:
     <div class="card">
       <!-- Cabeçalho -->
       <div class="card-header">
-        <h2>🔍 Buscador de Usuários</h2>
+        <h2>Buscador de Usuários</h2>
         <p class="subtitle">Buscando usuários aleatórios da API</p>
       </div>
 
@@ -100,7 +100,7 @@ Cole este código no arquivo `BuscadorUsuario.vue`:
           class="btn btn-primary"
           :disabled="carregando"
         >
-          {{ carregando ? '⏳ Buscando...' : '🎲 Buscar Usuário Aleatório' }}
+          {{ carregando ? 'Buscando...' : 'Buscar Usuário Aleatório' }}
         </button>
 
         <!-- Estado: Carregando -->
@@ -111,10 +111,10 @@ Cole este código no arquivo `BuscadorUsuario.vue`:
 
         <!-- Estado: Erro -->
         <div v-else-if="erro" class="alert alert-danger">
-          <h4>❌ Ops! Algo deu errado</h4>
+          <h4>Ops! Algo deu errado</h4>
           <p>{{ erro }}</p>
           <button @click="buscarUsuario" class="btn btn-secondary">
-            🔄 Tentar Novamente
+            Tentar Novamente
           </button>
         </div>
 
@@ -144,7 +144,7 @@ Cole este código no arquivo `BuscadorUsuario.vue`:
 
         <!-- Estado: Inicial (sem dados ainda) -->
         <div v-else class="inicial">
-          <p>👆 Clique no botão acima para buscar um usuário!</p>
+          <p>Clique no botão para buscar um usuário.</p>
         </div>
       </div>
     </div>
@@ -162,7 +162,7 @@ Cole este código no arquivo `BuscadorUsuario.vue`:
 
 ---
 
-## 🔧 Passo 4: Script do Componente
+## Passo 4: Script do Componente
 
 Agora vamos adicionar a lógica JavaScript. Cole este código logo após o `</template>`:
 
@@ -289,7 +289,7 @@ mounted() {
 
 ---
 
-## 🎨 Passo 5: Estilos
+## Passo 5: Estilos
 
 Agora vamos deixar bonito! Cole este CSS após o `</script>`:
 
@@ -468,7 +468,7 @@ Agora vamos deixar bonito! Cole este CSS após o `</script>`:
 
 ---
 
-## 🎯 Passo 6: Usar o Componente
+## Passo 6: Usar o Componente
 
 Agora precisamos adicionar o componente no `App.vue` para vê-lo funcionando.
 
@@ -514,7 +514,7 @@ body {
 
 ---
 
-## ▶️ Passo 7: Executar o Projeto
+## ▶Passo 7: Executar o Projeto
 
 Agora vamos ver tudo funcionando!
 
@@ -528,7 +528,7 @@ Abra o navegador em `http://localhost:5173` (ou a URL que aparecer no terminal).
 
 ---
 
-## ✅ O que você deve ver
+## O que você deve ver
 
 1. **Ao carregar a página:**
    - Um card roxo bonito com título
@@ -549,7 +549,7 @@ Abra o navegador em `http://localhost:5173` (ou a URL que aparecer no terminal).
 
 ---
 
-## 🧪 Testes para Fazer
+## Testes para Fazer
 
 ### Teste 1: Funcionamento Normal
 1. Abra a página
@@ -567,7 +567,7 @@ Abra o navegador em `http://localhost:5173` (ou a URL que aparecer no terminal).
 1. Abra o DevTools (F12)
 2. Vá na aba Console
 3. Clique no botão
-4. Você verá: `✅ Usuário carregado: {...}`
+4. Você verá: `Uusário carregado: {...}`
 
 ### Teste 4: Ver a Requisição
 1. Abra o DevTools (F12)
@@ -585,25 +585,7 @@ Abra o navegador em `http://localhost:5173` (ou a URL que aparecer no terminal).
 
 ---
 
-## 🎓 O que você aprendeu
-
-### ✅ Conceitos de Vue.js
-- Como criar um componente completo
-- Usar `data()` para dados reativos
-- Hook `mounted()` para executar código ao iniciar
-- Métodos com `async/await`
-- Renderização condicional com `v-if`, `v-else-if`, `v-else`
-- Binding de atributos com `:`
-- Event handling com `@click`
-
-### ✅ Conceitos de Axios
-- Instalar e importar Axios
-- Fazer requisição GET com `axios.get()`
-- Usar `await` para esperar resposta
-- Acessar dados da resposta com `response.data`
-- Tratar erros com `try/catch`
-
-### ✅ Boas Práticas
+### Boas Práticas
 - Sempre ter 3 estados: loading, erro e sucesso
 - Tratar diferentes tipos de erros
 - Usar `finally` para código que sempre deve executar
@@ -611,7 +593,7 @@ Abra o navegador em `http://localhost:5173` (ou a URL que aparecer no terminal).
 - Mensagens de erro amigáveis para o usuário
 - Console.log para debug
 
-### ✅ Estados Assíncronos
+### Estados Assíncronos
 ```javascript
 // 1. Antes da requisição
 carregando = true
@@ -632,46 +614,20 @@ carregando = false
 
 ---
 
-## 🚀 Desafios Extras
 
-Agora que você entendeu o básico, tente implementar:
-
-### Desafio 1: Escolher Gênero
-Adicione dois botões: "Homem" e "Mulher"
-- API aceita `?gender=male` ou `?gender=female`
-
-### Desafio 2: Buscar Vários Usuários
-- Mude para buscar 5 usuários: `?results=5`
-- Exiba todos em uma lista
-
-### Desafio 3: Favoritos
-- Adicione um botão "❤️ Favoritar"
-- Armazene usuários favoritos em um array
-- Mostre a lista de favoritos
-
-### Desafio 4: Escolher Nacionalidade
-- Adicione um select com países
-- API aceita `?nat=BR` (BR, US, FR, etc)
-
-### Desafio 5: Animações
-- Instale: `npm install animate.css`
-- Adicione animações ao card do usuário
-
----
-
-## 📚 Código Completo
+## Código Completo
 
 Se tiver dúvidas, aqui está o código completo do componente:
 
 <details>
-<summary>👉 Clique para ver o código completo</summary>
+<summary> Clique para ver o código completo</summary>
 
 ```vue
 <template>
   <div class="buscador-usuario">
     <div class="card">
       <div class="card-header">
-        <h2>🔍 Buscador de Usuários</h2>
+        <h2>Buscador de Usuários</h2>
         <p class="subtitle">Buscando usuários aleatórios da API</p>
       </div>
 
@@ -681,7 +637,7 @@ Se tiver dúvidas, aqui está o código completo do componente:
           class="btn btn-primary"
           :disabled="carregando"
         >
-          {{ carregando ? '⏳ Buscando...' : '🎲 Buscar Usuário Aleatório' }}
+          {{ carregando ? 'Buscando...' : 'Buscar Usuário Aleatório' }}
         </button>
 
         <div v-if="carregando" class="loading">
@@ -690,10 +646,10 @@ Se tiver dúvidas, aqui está o código completo do componente:
         </div>
 
         <div v-else-if="erro" class="alert alert-danger">
-          <h4>❌ Ops! Algo deu errado</h4>
+          <h4>Ops! Algo deu errado</h4>
           <p>{{ erro }}</p>
           <button @click="buscarUsuario" class="btn btn-secondary">
-            🔄 Tentar Novamente
+            Tentar Novamente
           </button>
         </div>
 
@@ -721,7 +677,7 @@ Se tiver dúvidas, aqui está o código completo do componente:
         </div>
 
         <div v-else class="inicial">
-          <p>👆 Clique no botão acima para buscar um usuário!</p>
+          <p>Clique no botão para buscar um usuário.</p>
         </div>
       </div>
     </div>
@@ -957,7 +913,7 @@ export default {
 
 ---
 
-## 🆘 Problemas Comuns
+## Problemas Comuns
 
 ### Erro: "Cannot find module 'axios'"
 **Solução:** Execute `npm install axios`
@@ -976,31 +932,15 @@ export default {
 
 ---
 
-## 📖 Próximos Passos
+## Próximos Passos
 
-Agora que você domina o básico de requisições com Axios:
+Agora que fizemos um tutorial sobre requisições com Axios:
 
 1. **Exercício 2:** Buscar lista de posts e implementar filtros
    - Arquivo: `Exercicio2.md`
 
 2. **Exercício 3:** Criar CRUD completo
    - Arquivo: `Exercicio3.md`
-
----
-
-## 🎉 Parabéns!
-
-Você acabou de criar sua primeira aplicação Vue.js que se comunica com uma API!
-
-Você aprendeu:
-- ✅ Como instalar e usar Axios
-- ✅ Fazer requisições GET
-- ✅ Trabalhar com dados assíncronos
-- ✅ Gerenciar estados de loading e erro
-- ✅ Exibir dados dinamicamente
-- ✅ Boas práticas de UX
-
-Continue praticando e explore os exercícios 2 e 3! 🚀
 
 ---
 
@@ -1011,4 +951,4 @@ Continue praticando e explore os exercícios 2 e 3! 🚀
 - [Vue.js - Lifecycle Hooks](https://vuejs.org/guide/essentials/lifecycle.html)
 - [MDN - Async/Await](https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Statements/async_function)
 
-💡 **Dica:** Quando tiver dúvidas, leia novamente este exercício. Ele tem tudo explicado passo a passo!
+**Dica:** Quando tiver dúvidas, leia novamente este exercício. Ele tem tudo explicado passo a passo.

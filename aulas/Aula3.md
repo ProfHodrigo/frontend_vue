@@ -437,7 +437,7 @@ Crie um componente que busca uma lista de dados de uma API e exibe em cards.
 
 ---
 
-### Exercício 3: CRUD Completo
+### Exercício 3: CRUD Simples
 
 Crie uma aplicação completa de cadastro de produtos com:
 - Listar produtos
@@ -470,19 +470,6 @@ Crie uma aplicação completa de cadastro de produtos com:
 ✅ **Async/Await**: Forma moderna de trabalhar com código assíncrono
 
 ✅ **Try/Catch**: Trata erros em código assíncrono
-
----
-
-## Checklist de Implementação
-
-- [ ] Axios instalado (`npm install axios`)
-- [ ] Arquivo `api.js` criado com configuração base
-- [ ] Service criado (ex: `ProdutosService.js`)
-- [ ] Componente com estados (`carregando`, `erro`, `dados`)
-- [ ] Método `mounted()` para buscar dados iniciais
-- [ ] Tratamento de erros implementado
-- [ ] Loading state exibido durante requisição
-- [ ] Mensagens de erro amigáveis para o usuário
 
 ---
 

@@ -1,4 +1,4 @@
-# Exercício 3 — CRUD Completo de Produtos
+# Exercício 3 — CRUD Simples de Produtos
 
 ## Objetivo
 
@@ -437,24 +437,6 @@ table {
 
 ---
 
-## Checklist de Implementação
-
-- [ ] `api.js` criado e configurado
-- [ ] `ProdutosService.js` com todos os métodos CRUD
-- [ ] Componente `GerenciadorProdutos.vue` criado
-- [ ] Hook `mounted()` busca produtos iniciais
-- [ ] Botão "Novo Produto" abre modal
-- [ ] Formulário no modal funciona
-- [ ] Criar produto adiciona na lista
-- [ ] Editar produto atualiza na lista
-- [ ] Deletar produto remove da lista
-- [ ] Confirmação antes de deletar
-- [ ] Loading states implementados
-- [ ] Validação de formulário
-- [ ] Mensagens de sucesso/erro
-
----
-
 ## Desafios Extras
 
 ### 1. Busca e Filtros
@@ -529,25 +511,13 @@ Ao deletar, mostrar modal de confirmação estilizado ao invés de `confirm()`.
 
 ## Dicas Importantes
 
-💡 **JSONPlaceholder não persiste dados:** As alterações são simuladas, mas ao recarregar a página, volta ao estado inicial.
+**JSONPlaceholder não persiste dados:** As alterações são simuladas, mas ao recarregar a página, volta ao estado inicial.
 
-💡 **IDs podem se repetir:** Ao criar, o servidor retorna sempre ID 101. Em produção real, o backend gera IDs únicos.
+**IDs podem se repetir:** Ao criar, o servidor retorna sempre ID 101. Em produção real, o backend gera IDs únicos.
 
-💡 **Use DevTools:** Abra a aba Network (F12) para ver as requisições e respostas.
+**Use DevTools:** Abra a aba Network (F12) para ver as requisições e respostas.
 
-💡 **Trate erros:** Sempre use try/catch e mostre mensagens amigáveis ao usuário.
-
----
-
-## Próximos Passos
-
-Após completar este exercício, você estará pronto para:
-
-1. Conectar com backend real (Flask, Express, etc)
-2. Adicionar autenticação (JWT)
-3. Usar Vuex/Pinia para gerenciar estado global
-4. Implementar upload de imagens
-5. Criar rotas com Vue Router
+**Trate erros:** Sempre use try/catch e mostre mensagens amigáveis ao usuário.
 
 ---
 
@@ -557,5 +527,3 @@ Após completar este exercício, você estará pronto para:
 - [Axios Methods](https://axios-http.com/docs/api_intro)
 - [HTTP Status Codes](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status)
 - [REST API Best Practices](https://restfulapi.net/)
-
-💡 **Dica Final:** Este é o exercício mais completo! Se conseguir fazer sozinho, já domina comunicação com API em Vue.js!

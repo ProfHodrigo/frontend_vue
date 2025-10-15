@@ -495,20 +495,6 @@ Ao deletar, mostrar modal de confirmação estilizado ao invés de `confirm()`.
 
 ---
 
-## Conceitos Praticados
-
-✅ CRUD completo (Create, Read, Update, Delete)  
-✅ Service Layer (ProdutosService)  
-✅ Axios com todos os métodos HTTP  
-✅ Modal programático  
-✅ Formulário com v-model  
-✅ Modo edição vs criação  
-✅ Confirmações  
-✅ Manipulação de arrays (push, filter, findIndex)  
-✅ Spread operator (`...`)  
-
----
-
 ## Dicas Importantes
 
 **JSONPlaceholder não persiste dados:** As alterações são simuladas, mas ao recarregar a página, volta ao estado inicial.

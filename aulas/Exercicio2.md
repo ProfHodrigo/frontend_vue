@@ -261,19 +261,6 @@ E usar no template:
 
 ---
 
-## Conceitos Praticados
-
-✅ Requisições GET com Axios  
-✅ Hook `mounted()`  
-✅ Computed properties  
-✅ Filtro de array  
-✅ v-if/v-else para estados  
-✅ v-for para listas  
-✅ v-model para input  
-✅ String methods (substring, includes, toLowerCase)  
-
----
-
 ## Próximo Exercício
 
 **Exercício 3:** Criar um CRUD simples de produtos com:

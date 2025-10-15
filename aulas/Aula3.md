@@ -1,170 +1,309 @@
 # Aula 3 — Comunicação com API (Axios)
 
 ## Objetivos
-
-- Integrar frontend Vue.js com backend Flask
-- Configurar Axios e interceptadores
-- Gerenciar estados de loading e erro
-- Implementar autenticação JWT
+- Entender o que são APIs e como funcionam
+- Instalar e configurar o Axios
+- Fazer requisições GET e POST
+- Trabalhar com estados de loading e erro
+- Gerenciar dados assíncronos em componentes Vue
 
 ---
 
-## Pré-requisitos
+## O que é uma API?
 
-⚠️ **Antes de começar, configure o backend Flask!**
+**API** (Application Programming Interface) é uma forma de dois sistemas se comunicarem. No nosso caso:
+- **Frontend (Vue.js)**: Interface que o usuário vê
+- **Backend (Servidor)**: Onde ficam os dados e a lógica de negócio
 
-**Leia e siga:** `SETUP_BACKEND_AULA3.md` (raiz do projeto)
+### Analogia do Restaurante
+- **Cliente (Frontend)**: Você fazendo o pedido
+- **Garçom (API)**: Leva seu pedido para a cozinha e traz a comida
+- **Cozinha (Backend)**: Prepara seu pedido
 
-Passos essenciais:
+---
 
-1. Instalar Flask-CORS
-2. Configurar CORS no backend
-3. Criar endpoint público `/api/teste`
-4. Verificar JWT configurado em `/api/dados`
+## Métodos HTTP Principais
 
-**Sem isso, as requisições serão bloqueadas!**
+| Método | Ação | Exemplo |
+|--------|------|---------|
+| **GET** | Buscar dados | Listar produtos |
+| **POST** | Criar novo dado | Cadastrar produto |
+| **PUT** | Atualizar completamente | Editar produto inteiro |
+| **PATCH** | Atualizar parcialmente | Mudar só o preço |
+| **DELETE** | Deletar | Remover produto |
 
 ---
 
 ## Instalando Axios
 
+O **Axios** é uma biblioteca JavaScript para fazer requisições HTTP de forma fácil.
+
 ```bash
 npm install axios
 ```
 
-O Axios já está em `package.json`, mas certifique-se de ter instalado as dependências:
+### Por que usar Axios?
 
-```bash
-npm install
-```
+✅ Mais fácil que `fetch` nativo  
+✅ Conversão automática para JSON  
+✅ Suporta interceptadores (adicionar token, tratar erros)  
+✅ Funciona no navegador e Node.js  
 
 ---
 
-## Configuração do Axios
+## Configuração Básica do Axios
 
-### 1. Criar Instância Configurada
+### 1. Criar instância configurada
 
-**Veja implementação completa em:** `src/services/api.js`
-
-**Conceitos principais:**
+Crie o arquivo `src/services/api.js`:
 
 ```javascript
-// Instância base
+import axios from 'axios'
+
+// Cria uma instância do axios com configuração padrão
 const api = axios.create({
-  baseURL: 'http://localhost:5000',
-  timeout: 5000
+  baseURL: 'http://localhost:5000', // URL do seu backend
+  timeout: 5000, // Tempo máximo de espera (5 segundos)
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
-// Interceptor de Requisição (adiciona token)
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-// Interceptor de Resposta (trata erros)
-api.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      // Redirecionar para login
-    }
-    return Promise.reject(error)
-  }
-)
+export default api
 ```
 
-**O que são Interceptors?**
-
-- **Request Interceptor**: Executa antes de cada requisição (adiciona token, logs)
-- **Response Interceptor**: Executa após cada resposta (trata erros globalmente)
+**Explicação:**
+- `baseURL`: URL base do seu backend (não precisa repetir em todas as requisições)
+- `timeout`: Cancela requisição se demorar mais que 5 segundos
+- `headers`: Informações extras enviadas em toda requisição
 
 ---
 
 ### 2. Criar Service (Camada de Serviço)
 
-**Veja implementação completa em:** `src/services/DadosService.js`
-
-**Exemplo simplificado:**
+Crie o arquivo `src/services/ProdutosService.js`:
 
 ```javascript
 import api from './api'
 
 export default {
-  async testarConexao() {
+  // Buscar todos os produtos
+  async listar() {
     try {
-      const response = await api.get('/api/teste')
+      const response = await api.get('/api/produtos')
+      return { sucesso: true, dados: response.data }
+    } catch (erro) {
+      return { 
+        sucesso: false, 
+        mensagem: erro.response?.data?.mensagem || erro.message 
+      }
+    }
+  },
+
+  // Buscar produto específico
+  async buscarPorId(id) {
+    try {
+      const response = await api.get(`/api/produtos/${id}`)
       return { sucesso: true, dados: response.data }
     } catch (erro) {
       return { sucesso: false, mensagem: erro.message }
     }
   },
 
-  async buscarDados() {
-    const response = await api.get('/api/dados')
-    return { sucesso: true, dados: response.data }
+  // Criar novo produto
+  async criar(produto) {
+    try {
+      const response = await api.post('/api/produtos', produto)
+      return { sucesso: true, dados: response.data }
+    } catch (erro) {
+      return { sucesso: false, mensagem: erro.message }
+    }
+  },
+
+  // Atualizar produto
+  async atualizar(id, produto) {
+    try {
+      const response = await api.put(`/api/produtos/${id}`, produto)
+      return { sucesso: true, dados: response.data }
+    } catch (erro) {
+      return { sucesso: false, mensagem: erro.message }
+    }
+  },
+
+  // Deletar produto
+  async deletar(id) {
+    try {
+      await api.delete(`/api/produtos/${id}`)
+      return { sucesso: true }
+    } catch (erro) {
+      return { sucesso: false, mensagem: erro.message }
+    }
   }
 }
 ```
 
 **Vantagens do Service:**
-
-- Centraliza lógica de API
-- Facilita manutenção
-- Trata erros de forma consistente
+- Centraliza toda a lógica de API em um só lugar
+- Facilita manutenção (se mudar a URL, muda só aqui)
+- Padroniza tratamento de erros
+- Facilita testes
 
 ---
 
-## Usando no Componente
+## Usando no Componente Vue
 
-**Veja implementação completa em:** `src/components/TesteAPI.vue`
+### Padrão de Estados Assíncronos
 
-**Padrão básico:**
+Todo componente que faz requisições deve ter 3 estados:
+
+```javascript
+data() {
+  return {
+    carregando: false,  // True quando está fazendo requisição
+    erro: null,         // Mensagem de erro (se houver)
+    dados: null         // Dados recebidos da API
+  }
+}
+```
+
+### Exemplo Completo - Listar Produtos
 
 ```vue
 <template>
-  <div>
-    <button @click="buscar" :disabled="carregando">
-      {{ carregando ? 'Carregando...' : 'Buscar' }}
-    </button>
-    
-    <div v-if="dados">
-      {{ dados }}
+  <div class="lista-produtos">
+    <h2>Produtos</h2>
+
+    <!-- Estado: Carregando -->
+    <div v-if="carregando" class="text-center">
+      <div class="spinner"></div>
+      <p>Carregando produtos...</p>
     </div>
-    
-    <div v-if="erro" class="erro">
-      {{ erro }}
+
+    <!-- Estado: Erro -->
+    <div v-else-if="erro" class="alert alert-danger">
+      <strong>Erro:</strong> {{ erro }}
+      <button @click="buscarProdutos">Tentar novamente</button>
+    </div>
+
+    <!-- Estado: Sucesso -->
+    <div v-else-if="produtos.length > 0">
+      <div v-for="produto in produtos" :key="produto.id" class="produto-card">
+        <h4>{{ produto.nome }}</h4>
+        <p>{{ produto.descricao }}</p>
+        <p><strong>R$ {{ produto.preco.toFixed(2) }}</strong></p>
+      </div>
+    </div>
+
+    <!-- Estado: Vazio -->
+    <div v-else class="text-center">
+      <p>Nenhum produto encontrado</p>
     </div>
   </div>
 </template>
 
 <script>
-import DadosService from '../services/DadosService'
+import ProdutosService from '../services/ProdutosService'
+
+export default {
+  name: 'ListaProdutos',
+  data() {
+    return {
+      carregando: false,
+      erro: null,
+      produtos: []
+    }
+  },
+  mounted() {
+    // Busca produtos quando o componente é montado
+    this.buscarProdutos()
+  },
+  methods: {
+    async buscarProdutos() {
+      // 1. Inicia loading e limpa erro anterior
+      this.carregando = true
+      this.erro = null
+
+      // 2. Faz a requisição
+      const resposta = await ProdutosService.listar()
+
+      // 3. Trata a resposta
+      if (resposta.sucesso) {
+        this.produtos = resposta.dados
+      } else {
+        this.erro = resposta.mensagem
+      }
+
+      // 4. Finaliza loading
+      this.carregando = false
+    }
+  }
+}
+</script>
+```
+
+**Explicação do Fluxo:**
+1. **mounted()**: Executado quando o componente aparece na tela
+2. **carregando = true**: Mostra spinner de loading
+3. **await**: Espera a resposta da API
+4. **if sucesso**: Armazena dados OU erro
+5. **carregando = false**: Esconde spinner
+
+---
+
+## Exemplo - Criar Produto (POST)
+
+```vue
+<template>
+  <form @submit.prevent="criarProduto">
+    <input v-model="novoProduto.nome" placeholder="Nome" required>
+    <input v-model="novoProduto.descricao" placeholder="Descrição" required>
+    <input v-model.number="novoProduto.preco" type="number" step="0.01" placeholder="Preço" required>
+    
+    <button type="submit" :disabled="carregando">
+      {{ carregando ? 'Salvando...' : 'Salvar Produto' }}
+    </button>
+
+    <p v-if="mensagem" :class="{ 'text-success': sucesso, 'text-danger': !sucesso }">
+      {{ mensagem }}
+    </p>
+  </form>
+</template>
+
+<script>
+import ProdutosService from '../services/ProdutosService'
 
 export default {
   data() {
     return {
       carregando: false,
-      dados: null,
-      erro: null
+      mensagem: '',
+      sucesso: false,
+      novoProduto: {
+        nome: '',
+        descricao: '',
+        preco: 0
+      }
     }
   },
   methods: {
-    async buscar() {
+    async criarProduto() {
       this.carregando = true
-      this.erro = null
-      
-      const resposta = await DadosService.buscarDados()
-      
+      this.mensagem = ''
+
+      const resposta = await ProdutosService.criar(this.novoProduto)
+
       if (resposta.sucesso) {
-        this.dados = resposta.dados
+        this.sucesso = true
+        this.mensagem = 'Produto criado com sucesso!'
+        // Limpa o formulário
+        this.novoProduto = { nome: '', descricao: '', preco: 0 }
+        // Opcional: Emitir evento para atualizar lista
+        this.$emit('produto-criado', resposta.dados)
       } else {
-        this.erro = resposta.mensagem
+        this.sucesso = false
+        this.mensagem = `Erro: ${resposta.mensagem}`
       }
-      
+
       this.carregando = false
     }
   }
@@ -174,209 +313,199 @@ export default {
 
 ---
 
-## Padrão de Estados Assíncronos
-
-Todo componente que faz requisições deve ter:
-
-```javascript
-data() {
-  return {
-    carregando: false,  // Estado de loading
-    erro: null,         // Mensagem de erro
-    dados: null         // Dados recebidos
-  }
-}
-```
-
-**Ciclo de vida de uma requisição:**
-
-1. **Início**: `carregando = true`, `erro = null`
-2. **Sucesso**: `dados = response.data`
-3. **Erro**: `erro = error.message`
-4. **Fim**: `carregando = false`
-
----
-
-## Autenticação JWT
-
-### Login
-
-```javascript
-// services/AuthService.js
-async login(email, senha) {
-  const response = await api.post('/api/login', { email, senha })
-  const token = response.data.token
-  
-  // Salva token
-  localStorage.setItem('token', token)
-  
-  return token
-}
-```
-
-### Logout
-
-```javascript
-logout() {
-  localStorage.removeItem('token')
-  // Redirecionar para login
-}
-```
-
-### Requisições Autenticadas
-
-O **interceptor** já adiciona o token automaticamente!
-
-```javascript
-// Não precisa fazer nada, o interceptor faz:
-// headers: { Authorization: 'Bearer TOKEN' }
-```
-
----
-
-## Endpoints do Backend
-
-Segundo `SETUP_BACKEND_AULA3.md`:
-
-| Método | Endpoint       | Autenticação | Descrição              |
-|--------|----------------|--------------|------------------------|
-| GET    | `/api/teste`   | ❌ Não       | Testar conexão         |
-| GET    | `/api/dados`   | ✅ JWT       | Buscar dados protegidos|
-| POST   | `/api/dados`   | ✅ JWT       | Enviar dados           |
-| POST   | `/api/login`   | ❌ Não       | Login (retorna JWT)    |
-
----
-
-## Checklist de Implementação
-
-- [ ] Backend configurado (CORS + endpoints)
-- [ ] Axios instalado
-- [ ] `api.js` criado com interceptadores
-- [ ] Services criados
-- [ ] Estados assíncronos implementados
-- [ ] Requisições GET/POST funcionando
-- [ ] Autenticação JWT funcionando
-- [ ] Erros sendo tratados
-
----
-
 ## Tratamento de Erros Comuns
 
-### 1. CORS Error
+### 1. Erro de CORS
 
 ```
 Access to XMLHttpRequest has been blocked by CORS policy
 ```
 
-**Solução:** Configure Flask-CORS no backend (ver `SETUP_BACKEND_AULA3.md`)
+**O que é:** O navegador bloqueia requisições de um domínio para outro por segurança.
 
----
+**Solução:** Configurar CORS no backend (Flask/Express):
 
-### 2. 401 Unauthorized
-
-```json
-{ "mensagem": "Token inválido ou ausente" }
+```python
+# Flask
+from flask_cors import CORS
+CORS(app)
 ```
 
+---
+
+### 2. Erro 404 (Não encontrado)
+
+```
+Request failed with status code 404
+```
+
+**Causas comuns:**
+- URL incorreta no `baseURL` ou na rota
+- Backend não está rodando
+- Endpoint não existe no backend
+
 **Solução:**
-
-- Faça login primeiro
-- Verifique se token está no localStorage
-- Verifique se interceptor está adicionando o token
+- Verifique se o backend está rodando
+- Teste a URL no navegador ou Postman
 
 ---
 
-### 3. Network Error
+### 3. Erro de Timeout
 
-**Soluções:**
+```
+timeout of 5000ms exceeded
+```
 
-- Backend está rodando? (`python app.py`)
-- URL correta no `baseURL`?
-- Firewall bloqueando?
+**Causa:** Requisição demorou mais que o tempo configurado.
+
+**Solução:**
+- Aumentar o `timeout` no `api.js`
+- Verificar se o backend está lento
 
 ---
 
-## Arquivos da Aula 3
+### 4. Network Error
 
-📁 **Arquivos criados:**
+```
+Network Error
+```
 
-1. `src/services/api.js` - Configuração do Axios com interceptadores
-2. `src/services/DadosService.js` - Métodos de requisição
-3. `src/components/TesteAPI.vue` - Interface de teste
-4. `SETUP_BACKEND_AULA3.md` - Instruções de configuração do backend
+**Causas:**
+- Backend não está rodando
+- URL errada
+- Problemas de rede/firewall
 
-💡 **Dica:** Sempre teste endpoints com Postman/Insomnia primeiro!
+**Solução:**
+- Rode o backend
+- Verifique a URL no `baseURL`
+
+---
+
+## Async/Await vs Promises
+
+### Com Promises (.then)
+
+```javascript
+ProdutosService.listar()
+  .then(resposta => {
+    if (resposta.sucesso) {
+      this.produtos = resposta.dados
+    }
+  })
+  .catch(erro => {
+    this.erro = erro.message
+  })
+```
+
+### Com Async/Await (Recomendado)
+
+```javascript
+async buscarProdutos() {
+  try {
+    const resposta = await ProdutosService.listar()
+    if (resposta.sucesso) {
+      this.produtos = resposta.dados
+    }
+  } catch (erro) {
+    this.erro = erro.message
+  }
+}
+```
+
+**Por que async/await é melhor?**
+- Código mais limpo e legível
+- Mais fácil de entender o fluxo
+- Trata erros com try/catch
+
+---
+
+## Exercícios Práticos
+
+### Exercício 1: Testar Conexão com API
+
+Crie um componente simples que testa a conexão com uma API pública.
+
+**Veja passo-a-passo completo em:** `Exercicio1.md`
+
+---
+
+### Exercício 2: Buscar e Exibir Dados
+
+Crie um componente que busca uma lista de dados de uma API e exibe em cards.
+
+**Veja dicas e orientações em:** `Exercicio2.md`
+
+---
+
+### Exercício 3: CRUD Completo
+
+Crie uma aplicação completa de cadastro de produtos com:
+- Listar produtos
+- Criar novo produto
+- Editar produto
+- Deletar produto
+
+**Veja dicas e orientações em:** `Exercicio3.md`
 
 ---
 
 ## Conceitos-Chave
 
-✅ **Axios:**
+✅ **API**: Interface para comunicação entre sistemas
 
-- Cliente HTTP baseado em Promises
-- Suporta interceptadores
-- Conversão automática JSON
+✅ **Axios**: Biblioteca para fazer requisições HTTP
 
-✅ **Interceptadores:**
+✅ **GET**: Buscar dados  
+✅ **POST**: Criar dados  
+✅ **PUT/PATCH**: Atualizar dados  
+✅ **DELETE**: Deletar dados
 
-- Request: adiciona token, logs
-- Response: trata erros globalmente
+✅ **Service**: Camada que centraliza lógica de API
 
-✅ **Services:**
+✅ **Estados Assíncronos**:
+- `carregando`: mostra spinner
+- `erro`: mostra mensagem de erro
+- `dados`: renderiza informações
 
-- Camada de abstração para API
-- Facilita manutenção
-- Centraliza lógica de requisições
+✅ **Async/Await**: Forma moderna de trabalhar com código assíncrono
 
-✅ **Estados Assíncronos:**
-
-- Loading: mostra spinner
-- Erro: mostra mensagem
-- Sucesso: renderiza dados
-
-✅ **JWT:**
-
-- Token de autenticação
-- Enviado no header `Authorization`
-- Validado pelo backend
+✅ **Try/Catch**: Trata erros em código assíncrono
 
 ---
 
-## Comandos Git
+## Checklist de Implementação
 
-```bash
-git checkout -b aula-03-api
-git add .
-git commit -m "Aula 3 - Comunicação com API"
-git push -u origin aula-03-api
-```
+- [ ] Axios instalado (`npm install axios`)
+- [ ] Arquivo `api.js` criado com configuração base
+- [ ] Service criado (ex: `ProdutosService.js`)
+- [ ] Componente com estados (`carregando`, `erro`, `dados`)
+- [ ] Método `mounted()` para buscar dados iniciais
+- [ ] Tratamento de erros implementado
+- [ ] Loading state exibido durante requisição
+- [ ] Mensagens de erro amigáveis para o usuário
 
 ---
 
 ## Próxima Aula
 
-**Aula 4 - State Management (Pinia):**
-
-- Gerenciamento de estado global
-- Stores
-- Actions e Getters
-- Compartilhar dados entre componentes
+**Aula 4 - Vue Router e Navegação:**
+- Configurar rotas
+- Navegação entre páginas
+- Parâmetros de rota
+- Guards de navegação
 
 ---
 
 ## Recursos
 
 📚 **Documentação:**
-
 - [Axios](https://axios-http.com/docs/intro)
-- [Interceptors](https://axios-http.com/docs/interceptors)
-- [Flask-CORS](https://flask-cors.readthedocs.io/)
-- [JWT](https://jwt.io/)
+- [MDN - Fetch API](https://developer.mozilla.org/pt-BR/docs/Web/API/Fetch_API)
+- [HTTP Methods](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Methods)
 
 🔧 **Ferramentas:**
+- [JSON Placeholder](https://jsonplaceholder.typicode.com/) - API pública para testes
+- [Postman](https://www.postman.com/) - Testar APIs
+- [Vue DevTools](https://devtools.vuejs.org/) - Debug de componentes
 
-- Postman: teste de APIs
-- Vue DevTools: debug de requisições
-- Browser Network Tab: inspecionar requests
-
-💡 **Dica:** Use `console.log` nos interceptadores para debug!
+💡 **Dica:** Sempre teste suas APIs com Postman antes de usar no Vue!

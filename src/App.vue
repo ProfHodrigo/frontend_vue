@@ -1,81 +1,98 @@
 <template>
-  <div id="app">
-    <!-- Header da aplicação -->
-    <header class="bg-primary text-white py-3 mb-4">
-      <div class="container">
-        <h1 class="mb-0">
-          <i class="fas fa-graduation-cap me-2"></i>
-          Frontend Vue.js - Aula 3
-        </h1>
-        <p class="mb-0 opacity-75">Comunicação com API Flask</p>
-      </div>
-    </header>
-
-    <!-- Conteúdo principal -->
-    <div class="container">
-      <TesteAPI />
+  <div id="app" class="aula3-wrapper">
+    <div class="aula3-card">
+      <h1>Vue.js - Aula 3</h1>
+      <p class="desc">Material da aula e exercícios:</p>
+      <ul class="links">
+        <li>
+          <a href="https://github.com/ProfHodrigo/frontend_vue/blob/aula-03-api/aulas/Aula3.md" target="_blank">Aula3.md</a>
+        </li>
+        <li>
+          <a href="https://github.com/ProfHodrigo/frontend_vue/blob/aula-03-api/aulas/Exercicio1.md" target="_blank">Exercicio1.md</a>
+        </li>
+        <li>
+          <a href="https://github.com/ProfHodrigo/frontend_vue/blob/aula-03-api/aulas/Exercicio2.md" target="_blank">Exercicio2.md</a>
+        </li>
+        <li>
+          <a href="https://github.com/ProfHodrigo/frontend_vue/blob/aula-03-api/aulas/Exercicio3.md" target="_blank">Exercicio3.md</a>
+        </li>
+      </ul>
+      <p class="footer">Prof. Rodrigo Viana &mdash; <a href="https://axios-http.com/" target="_blank">Axios Docs</a></p>
     </div>
-
-    <!-- Footer -->
-    <footer class="bg-light text-center py-3 mt-5">
-      <div class="container">
-        <p class="text-muted mb-0">
-          Aula 3 - Comunicação com API | 
-          <a href="https://axios-http.com/" target="_blank" class="text-decoration-none">
-            Documentação Axios
-          </a>
-        </p>
-      </div>
-    </footer>
   </div>
 </template>
 
 <script>
-import TesteAPI from './components/TesteAPI.vue'
 
 export default {
-  name: 'App',
-  components: {
-    TesteAPI
-  }
+  name: 'App'
 }
 </script>
 
 <style>
-/* Estilos globais da aplicação */
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
 }
 
-#app {
+#app.aula3-wrapper {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.container {
-  flex: 1;
+.aula3-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(102,126,234,0.15);
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
 }
 
-/* Animações suaves */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
+.aula3-card h1 {
+  margin-bottom: 0.5rem;
+  font-size: 2.2rem;
+  color: #667eea;
+  letter-spacing: 1px;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.aula3-card .desc {
+  color: #555;
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
 }
 
-/* Estilos customizados */
-.card {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  border: none;
+.aula3-card .links {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
 }
-
-.bg-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+.aula3-card .links li {
+  margin-bottom: 0.7rem;
+}
+.aula3-card .links a {
+  color: #764ba2;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1.08rem;
+  transition: color 0.2s;
+}
+.aula3-card .links a:hover {
+  color: #667eea;
+  text-decoration: underline;
+}
+.aula3-card .footer {
+  margin-top: 1.5rem;
+  color: #aaa;
+  font-size: 0.95rem;
+}
+.aula3-card .footer a {
+  color: #aaa;
+  text-decoration: underline;
 }
 </style>

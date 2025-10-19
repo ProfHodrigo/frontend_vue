@@ -1,13 +1,10 @@
-## Aula 5 — Formulários e Validação Avançada
+# Aula 5 - Formulários e Validação
 
-### Objetivos
-- Criar formulários reativos e dinâmicos
-- Implementar validação client-side robusta
+## Objetivos
+- Criar formulários reativos com Vue.js
+- Implementar validações de formulário
 - Trabalhar com diferentes tipos de inputs
-- Criar componentes de formulário reutilizáveis
-- Integrar validação com APIs
-- Implementar upload de arquivos
-- Aplicar boas práticas de UX em formulários
+- Criar formulário com máscaras e validações
 
 ---
 

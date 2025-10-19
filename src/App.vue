@@ -5,39 +5,38 @@
       <div class="container">
         <h1 class="mb-0">
           <i class="fas fa-graduation-cap me-2"></i>
-          Frontend Vue.js - Aula 1
+          Frontend Vue.js - Aula 5
         </h1>
-        <p class="mb-0 opacity-75">Introdução ao Vue.js</p>
+        <p class="mb-0 opacity-75">Formulários e Validação</p>
       </div>
     </header>
 
     <!-- Conteúdo principal -->
     <div class="container">
       <div class="row">
-        <div class="col-md-8">
-          <!-- Componente principal da aula -->
-          <HelloWorld />
+        <div class="col-md-9">
+          <!-- Formulário principal -->
+          <FormularioCompleto />
         </div>
         
-        <div class="col-md-4">
+        <div class="col-md-3">
           <!-- Sidebar com informações -->
           <div class="card">
             <div class="card-header">
               <h5 class="mb-0">
                 <i class="fas fa-info-circle me-2"></i>
-                Aula 1 - Conceitos
+                Conceitos Abordados
               </h5>
             </div>
             <div class="card-body">
               <ul class="list-unstyled">
-                <li><i class="fas fa-check text-success me-2"></i>Reatividade</li>
-                <li><i class="fas fa-check text-success me-2"></i>Data Binding</li>
-                <li><i class="fas fa-check text-success me-2"></i>Event Handling</li>
-                <li><i class="fas fa-check text-success me-2"></i>Componentes</li>
+                <li><i class="fas fa-check text-success me-2"></i>v-model</li>
+                <li><i class="fas fa-check text-success me-2"></i>Validação de Formulários</li>
+                <li><i class="fas fa-check text-success me-2"></i>Tratamento de Erros</li>
+                <li><i class="fas fa-check text-success me-2"></i>Feedback Visual</li>
               </ul>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -57,18 +56,20 @@
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import FormularioCompleto from './components/FormularioCompleto.vue'
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    FormularioCompleto
   }
 }
 </script>
 
 <style>
-/* Estilos globais da aplicação */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -84,21 +85,10 @@ body {
   flex: 1;
 }
 
-/* Animações suaves */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* Estilos customizados */
 .card {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   border: none;
+  margin-bottom: 1.5rem;
 }
 
 .bg-primary {

@@ -10,10 +10,10 @@
     "serve": "vite preview --port 3000"
   },
   "dependencies": {
-    "vue": "^3.3.0",
-    "vue-router": "^4.2.0",
+    "axios": "^1.4.0",
     "pinia": "^2.1.0",
-    "axios": "^1.4.0"
+    "vue": "^3.3.0",
+    "vue-router": "^4.6.3"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.0",

@@ -331,19 +331,19 @@ Implementados nos componentes:
 #### Exercício 1: Sistema de Blog
 Veja o arquivo `Exercicio1.md` para criar um blog usando Vue Router.
 
-#### Exercício 2: Painel Administrativo (Opcional)
+#### Exercício 2: Painel Administrativo
 Estenda o exercício 1 adicionando:
-- Sistema de autenticação simples
-- Área administrativa protegida
-- Diferentes níveis de acesso
-- Redirecionamento para login
+- Crie um formulário para adicionar novos posts
+- Adicione categorias aos posts
+- Implemente uma busca de posts
 
-#### Exercício 3: Melhorias de UX (Opcional)
+
+#### Exercício 3: Melhorias de UX
 Adicione ao seu blog:
 - Animações de transição entre páginas
 - Loading bar durante navegação
 - Breadcrumbs para navegação
-- Persistência de estado com Vuex (opcional)
+
 
 ### Problemas Comuns e Soluções
 

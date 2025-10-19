@@ -1,73 +1,135 @@
-# Exercício 2: Validação Assíncrona
-Implementar validações com API:
-- Verificar email único
-- Validar CPF em base de dados
-- Busca de endereço por CEP
-- Debounce nas requisições
+# Exercício 2 - Formulário de Pesquisa Dinâmica
 
 ## Objetivo
 
 Desenvolver um formulário de pesquisa avançada com filtros dinâmicos e atualização em tempo real dos resultados.
 
-## Requisitos
+## Estrutura de Arquivos
 
-### Campos de Pesquisa
+```
+src/
+  components/
+    busca/
+      SearchInput.vue
+      FilterCategory.vue
+      PriceRange.vue
+      SortOptions.vue
+      ResultsList.vue
+  views/
+    PesquisaView.vue
+  utils/
+    searchFilters.js
+```
 
-O formulário deve incluir:
+## O que cada arquivo faz
 
-- Campo de busca principal (texto livre)
-- Filtros por categoria (múltipla seleção)
-- Range de preços (mínimo e máximo)
-- Ordenação (diferentes critérios)
-- Filtros avançados expansíveis
+### `src/utils/searchFilters.js` - Lógica de Filtros
 
-### Funcionalidades
+**Responsabilidade:** Funções para filtrar e ordenar produtos
 
-Implemente as seguintes funcionalidades:
+**Contém:**
+- Função para filtrar por categoria
+- Função para filtrar por preço
+- Função para ordenar por diferentes critérios
 
-- Atualização automática dos resultados
-- Limpar filtros individuais ou todos
-- Salvar pesquisas favoritas
-- Histórico de pesquisas recentes
+### `src/components/busca/SearchInput.vue` - Campo de Busca
 
-### Interface
+**O que faz:**
+- Campo de texto para buscar por nome
+- Atualiza resultados enquanto digita (com debounce)
+- Mostra número de resultados encontrados
 
-Desenvolva uma interface que apresente:
+### `src/components/busca/FilterCategory.vue` - Filtro de Categorias
 
-- Layout responsivo
-- Feedback visual durante a busca
-- Contador de resultados
-- Preview dos filtros ativos
+**O que faz:**
+- Checkboxes com lista de categorias
+- Permite múltipla seleção
+- Atualiza resultados em tempo real
 
-## Dicas de Implementação
+### `src/components/busca/PriceRange.vue` - Filtro de Preço
 
-1. **Gerenciamento de Estado**:
-   - Use computed properties para filtros
-   - Mantenha estado dos filtros organizado
-   - Implemente debounce para buscas
+**O que faz:**
+- Range slider com preço mínimo e máximo
+- Mostra o intervalo selecionado
+- Filtra produtos por faixa de preço
 
-2. **Performance**:
-   - Otimize atualizações de lista
-   - Cache resultados quando apropriado
-   - Implemente paginação se necessário
+### `src/components/busca/SortOptions.vue` - Ordenação
 
-3. **UX/UI**:
-   - Mantenha interface intuitiva
-   - Forneça feedback claro
-   - Permita desfazer ações
+**O que faz:**
+- Dropdown com opções de ordenação
+- Opções: Preço (menor/maior), Nome (A-Z), Mais Recentes
 
-## Desafios Extras
+### `src/components/busca/ResultsList.vue` - Lista de Resultados
 
-1. Adicionar suporte a filtros personalizados
-2. Implementar visualização em grid/lista
-3. Criar sistema de tags para pesquisas
-4. Adicionar exportação de resultados
+**O que faz:**
+- Exibe produtos filtrados em cards
+- Mostra imagem, nome, preço
+- Botão para ver detalhes
 
-## Avaliação
+### `src/views/PesquisaView.vue` - Página Principal de Busca
 
-Seu projeto será avaliado considerando:
+**O que faz:**
+- Junta todos os componentes de filtro
+- Coordena os filtros
+- Mostra resultados atualizados
+- Gerencia estado de busca
 
-- Responsividade da interface
-- Performance das buscas
-- Qualidade do código
-- Experiência do usuário
+## Funcionalidades
+
+1. **Busca por texto:**
+   - Digita no campo
+   - Resultados atualizam automaticamente
+
+2. **Filtros por categoria:**
+   - Marca/desmarca categorias
+   - Apenas produtos selecionados aparecem
+
+3. **Filtro por preço:**
+   - Arrasta slider para selecionar faixa
+   - Mostra somente produtos naquela faixa
+
+4. **Ordenação:**
+   - Escolhe critério de ordenação
+   - Lista reordena
+
+5. **Combinação de filtros:**
+   - Todos os filtros funcionam juntos
+   - Resultados respeitam TODOS simultaneamente
+
+## Exemplo de Fluxo
+
+```
+1. User abre página
+   ↓
+2. Vê lista completa de produtos
+   ↓
+3. Digita "camiseta" na busca
+   ↓
+4. Lista filtra para mostrar apenas camisetas
+   ↓
+5. Marca categoria "Azul"
+   ↓
+6. Lista mostra apenas camisetas azuis
+   ↓
+7. Arrasta preço para "50-100"
+   ↓
+8. Lista mostra apenas camisetas azuis entre 50-100
+   ↓
+9. Seleciona "Ordenar por Preço (menor)"
+   ↓
+10. Lista mostra camisetas azuis 50-100 ordenadas por preço
+```
+
+## Como Implementar
+
+1. Criar arquivo `searchFilters.js` com funções de filtro
+2. Criar 5 componentes de filtro/busca
+3. Criar view que junta tudo
+4. Adicionar rota e link em App.vue
+
+## Como Executar
+
+```bash
+npm run dev
+# Acesse http://localhost:5173/pesquisa
+```

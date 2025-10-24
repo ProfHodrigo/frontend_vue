@@ -115,7 +115,9 @@
         <small class="text-muted">
           <strong>Usuários de teste:</strong><br>
           prof@admin.com / admin123<br>
-          aluno@user.com / user123
+          aluno1@user.com / user123<br>
+          aluno2@user.com / user123<br>
+          aluno3@user.com / user123
         </small>
       </div>
     </div>

@@ -65,10 +65,6 @@
 										<i v-else class="fas fa-spinner fa-spin me-1"></i>
 										Testar API Protegida
 									</button>
-
-									<button class="btn btn-outline-secondary btn-sm" @click="copiarToken">
-										<i class="fas fa-copy me-1"></i> Copiar Token
-									</button>
 								</div>
 							</div>
 						</div>

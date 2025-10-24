@@ -116,7 +116,7 @@ export class AuthService {
         case 400:
           return data.message || 'Dados inválidos. Verifique os campos.'
         case 401:
-          return 'Email ou senha incorretos.'
+          return data.message || 'Não autorizado. Faça login novamente.'
         case 403:
           return 'Acesso negado. Verifique suas permissões.'
         case 422:

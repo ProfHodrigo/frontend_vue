@@ -649,35 +649,83 @@ Pontos importantes para producao:
 
 ---
 
-## Parte 8: Exercicios
+## Parte 8: Exercicios Praticos
 
-### Exercício 1: Proteção de Rotas
+### Exercício 1: Dashboard do Usuario (45 min)
 
-Tarefa: Implementar guards para proteger rotas.
+**Objetivo**: Criar um componente Dashboard que exibe informacoes do usuario autenticado.
 
-Passos:
-- Guard de autenticação: verificar token antes de acessar rota
-- Redirecionamento automático: redirecionar para `/login` se nao autenticado
-- Verificação de permissões: rotas admin apenas para usuarios autenticados
+**O que voce aprendera**:
+- Acessar dados do usuario autenticado
+- Criar componentes reutilizaveis
+- Exibir informacoes formatadas (datas, tempo de sessao)
+- Usar computed properties para calcular dados
 
-### Exercício 2: Refresh Token
+**Tarefas**:
+1. Criar componente `Dashboard.vue` em `src/components/`
+2. Exibir informacoes do usuario: nome, email, data de criacao
+3. Calcular e exibir "tempo de sessao" (desde o login)
+4. Adicionar card com estatisticas: total de logins, ultimo acesso
+5. Integrar Dashboard no `App.vue` (area autenticada)
 
-Tarefa: Implementar sistema de refresh automático.
+**Resultado esperado**: Ao fazer login, usuario ve dashboard com suas informacoes e estatisticas.
 
-Passos:
-- Token refresh antes do vencimento: renovar token silenciosamente 5 min antes de expirar
-- Renovação silenciosa: usuario nao percebe a renovacao
-- Logout automático em caso de falha: se refresh falhar, fazer logout
+**Dica**: Use `AuthService.getCurrentUser()` para obter dados do usuario.
 
-### Exercício 3: Lembrança de Login
+---
 
-Tarefa: Melhorar persistencia quando usuario marca "Lembrar-me".
+### Exercício 2: Edicao de Perfil (45 min)
 
-Passos:
-- Opção "Lembrar-me": aumentar TTL do token quando marcado
-- Storage seguro: armazenar em localStorage com flag de seguranca
-- Logout de todos os dispositivos: invalidar todos os tokens ao fazer logout
+**Objetivo**: Implementar funcionalidade de edicao de perfil do usuario.
 
+**O que voce aprendera**:
+- Criar formularios controlados no Vue
+- Validacao de campos (nome, email)
+- Fazer requisicoes PUT/PATCH para API
+- Atualizar estado local apos edicao bem-sucedida
+- Tratar erros de validacao do backend
+
+**Tarefas**:
+1. Criar componente `EditarPerfil.vue` em `src/components/`
+2. Criar formulario com campos: nome, email (senha nao editavel)
+3. Pre-popular campos com dados atuais do usuario
+4. Implementar validacao local (nome >= 2 chars, email valido)
+5. Criar metodo `AuthService.atualizarPerfil(dados)` para enviar PUT `/api/perfil`
+6. Implementar endpoint PUT `/api/perfil` no backend (Flask)
+7. Atualizar localStorage apos edicao bem-sucedida
+8. Exibir mensagem de sucesso/erro
+
+**Resultado esperado**: Usuario edita seu nome/email e ve mudancas refletidas imediatamente.
+
+**Dica**: Reutilize logica de validacao do `CadastroForm.vue`.
+
+---
+
+### Exercício 3: Historico de Acessos (30 min)
+
+**Objetivo**: Criar uma lista de atividades do usuario (historico de acoes).
+
+**O que voce aprendera**:
+- Gerenciar estado local (array de atividades)
+- Usar v-for para renderizar listas
+- Formatar timestamps de forma legivel
+- Persistir dados em localStorage
+- Adicionar/remover items dinamicamente
+
+**Tarefas**:
+1. Criar componente `HistoricoAcessos.vue` em `src/components/`
+2. Criar array `atividades` para armazenar: tipo, descricao, timestamp
+3. Adicionar atividade automaticamente ao fazer login
+4. Adicionar atividade ao testar API protegida
+5. Adicionar atividade ao atualizar perfil
+6. Renderizar lista com v-for (mais recentes primeiro)
+7. Adicionar botao "Limpar historico"
+8. Persistir historico em localStorage (chave: `historico_atividades`)
+9. Recuperar historico ao montar componente
+
+**Resultado esperado**: Usuario ve lista de todas as acoes realizadas na sessao.
+
+**Dica**: Já existe logica similar em `App.vue` (`logAtividades`). Extrair para componente.
 
 ---
 
@@ -691,5 +739,6 @@ Aula 7 apresentou:
 - Fluxo completo: login -> token -> requisicoes protegidas -> logout
 - Como executar localmente e troubleshooting comun
 - Pontos de seguranca para producao
+- **3 exercicios praticos focados em Vue.js e JWT**
 
 **Proxima aula**: Pinia para gerenciamento de estado global (store de usuario, produtos, etc).

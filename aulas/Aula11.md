@@ -1,81 +1,62 @@
-## Aula 11 — Deploy e CI/CD
+# Aula 11: Build e Deploy
 
-### Objetivos
-- Configurar builds para produção
-- Deploy em diferentes plataformas
-- Configurar pipelines de CI/CD
-- Gerenciar ambientes (dev/staging/prod)
-- Implementar deployment automático
-- Configurar monitoramento e logs
-- Otimizar para produção
-- Implementar rollback strategies
+Esta aula aborda o processo completo de preparacao, build e deploy de aplicacoes Vue.js em producao. Vamos explorar desde a configuracao de ambientes ate estrategias avancadas de deployment e monitoramento.
 
----
+## Objetivos da Aula
 
-### Build para Produção
+- Configurar builds otimizadas para producao
+- Gerenciar multiplos ambientes (development, staging, production)
+- Implementar pipelines de CI/CD
+- Deploy em diferentes plataformas (Netlify, Vercel, AWS)
+- Configurar Docker para containerizacao
+- Implementar monitoring e observabilidade
+- Criar estrategias de rollback
 
-#### Configuração de Environment
+## Parte 1: Configuracao de Ambientes
 
-##### `.env.development`
+### 1.1 Variaveis de Ambiente
 
-```bash
-VITE_APP_TITLE=Vue App - Development
+As variaveis de ambiente permitem configurar a aplicacao para diferentes contextos sem alterar o codigo.
+
+#### Arquivo `.env.development`
+
+```env
+VITE_APP_TITLE=Aplicacao Vue - Desenvolvimento
 VITE_API_BASE_URL=http://localhost:3000/api
 VITE_APP_ENV=development
 VITE_ENABLE_DEVTOOLS=true
 VITE_LOG_LEVEL=debug
-VITE_SENTRY_DSN=
-VITE_GTM_ID=
 ```
 
-##### `.env.staging`
+#### Arquivo `.env.production`
 
-```bash
-VITE_APP_TITLE=Vue App - Staging
-VITE_API_BASE_URL=https://api-staging.example.com/api
-VITE_APP_ENV=staging
-VITE_ENABLE_DEVTOOLS=true
-VITE_LOG_LEVEL=warn
-VITE_SENTRY_DSN=your-staging-sentry-dsn
-VITE_GTM_ID=GTM-STAGING
-```
-
-##### `.env.production`
-
-```bash
-VITE_APP_TITLE=Vue App
-VITE_API_BASE_URL=https://api.example.com/api
+```env
+VITE_APP_TITLE=Aplicacao Vue
+VITE_API_BASE_URL=https://api.seusite.com/api
 VITE_APP_ENV=production
 VITE_ENABLE_DEVTOOLS=false
 VITE_LOG_LEVEL=error
-VITE_SENTRY_DSN=your-production-sentry-dsn
-VITE_GTM_ID=GTM-PROD123
-VITE_ENABLE_PWA=true
+VITE_SENTRY_DSN=https://chave@sentry.io/projeto
+VITE_GTM_ID=GTM-XXXXXXX
 ```
 
-#### `src/config/environment.js`
+### 1.2 Modulo de Configuracao
+
+Criar um modulo centralizado para acessar variaveis de ambiente:
+
+**Arquivo: `src/config/environment.js`**
 
 ```javascript
-/**
- * Configuração de ambiente
- */
 export const ENV = {
   APP_TITLE: import.meta.env.VITE_APP_TITLE || 'Vue App',
   API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '/api',
   APP_ENV: import.meta.env.VITE_APP_ENV || 'development',
   ENABLE_DEVTOOLS: import.meta.env.VITE_ENABLE_DEVTOOLS === 'true',
   LOG_LEVEL: import.meta.env.VITE_LOG_LEVEL || 'info',
-  SENTRY_DSN: import.meta.env.VITE_SENTRY_DSN,
-  GTM_ID: import.meta.env.VITE_GTM_ID,
-  ENABLE_PWA: import.meta.env.VITE_ENABLE_PWA === 'true',
   
-  // Computed properties
+  // Propriedades computadas
   get isDevelopment() {
     return this.APP_ENV === 'development'
-  },
-  
-  get isStaging() {
-    return this.APP_ENV === 'staging'
   },
   
   get isProduction() {
@@ -83,92 +64,52 @@ export const ENV = {
   }
 }
 
-// Validate required environment variables
-const requiredVars = ['VITE_API_BASE_URL']
-
-if (ENV.isProduction) {
-  requiredVars.push('VITE_SENTRY_DSN', 'VITE_GTM_ID')
-}
-
-for (const varName of requiredVars) {
-  if (!import.meta.env[varName]) {
-    throw new Error(`Missing required environment variable: ${varName}`)
-  }
-}
-
 export default ENV
 ```
 
-#### `vite.config.production.js`
+**Uso no codigo:**
+
+```javascript
+import ENV from '@/config/environment'
+
+// Configurar axios com base no ambiente
+axios.defaults.baseURL = ENV.API_BASE_URL
+
+// Log condicional
+if (ENV.isDevelopment) {
+  console.log('Dados:', data)
+}
+```
+
+### 1.3 Configuracao do Vite para Producao
+
+**Arquivo: `vite.config.js`**
 
 ```javascript
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
-import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   
   return {
-    plugins: [
-      vue(),
-      
-      // PWA Plugin
-      VitePWA({
-        registerType: 'autoUpdate',
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/api\.example\.com\//,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'api-cache',
-                expiration: {
-                  maxEntries: 100,
-                  maxAgeSeconds: 60 * 60 * 24 // 24 hours
-                },
-                cacheKeyWillBeUsed: async ({ request }) => {
-                  return `${request.url}?v=${Date.now()}`
-                }
-              }
-            }
-          ]
-        },
-        manifest: {
-          name: env.VITE_APP_TITLE,
-          short_name: 'VueApp',
-          description: 'Professional Vue.js Application',
-          theme_color: '#007bff',
-          background_color: '#ffffff',
-          display: 'standalone',
-          start_url: '/',
-          icons: [
-            {
-              src: '/icons/icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png'
-            },
-            {
-              src: '/icons/icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png'
-            }
-          ]
-        }
-      })
-    ],
+    plugins: [vue()],
+    
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src')
+      }
+    },
     
     build: {
-      // Production optimizations
+      // Otimizacoes de producao
       target: 'es2015',
       minify: 'terser',
       terserOptions: {
         compress: {
           drop_console: mode === 'production',
-          drop_debugger: true,
-          pure_funcs: mode === 'production' ? ['console.log', 'console.debug'] : []
+          drop_debugger: true
         }
       },
       
@@ -178,52 +119,31 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             vendor: ['vue', 'vue-router', 'pinia'],
             ui: ['bootstrap'],
-            utils: ['axios', 'lodash']
-          },
-          
-          // Optimize file names
-          chunkFileNames: 'assets/[name]-[hash].js',
-          entryFileNames: 'assets/[name]-[hash].js',
-          assetFileNames: 'assets/[name]-[hash].[ext]'
+            utils: ['axios']
+          }
         }
       },
       
-      // Asset optimization
-      assetsInlineLimit: 4096,
-      cssCodeSplit: true,
-      
-      // Source maps for production debugging
-      sourcemap: mode === 'staging'
-    },
-    
-    resolve: {
-      alias: {
-        '@': resolve(__dirname, 'src')
-      }
-    },
-    
-    // Performance budget
-    build: {
-      ...{},
+      // Limite de tamanho de chunk
       chunkSizeWarningLimit: 1000
     },
     
-    // Define global constants
+    // Definir constantes globais
     define: {
       __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-      __BUILD_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0')
+      __VERSION__: JSON.stringify('1.0.0')
     }
   }
 })
 ```
 
----
+## Parte 2: Deploy em Plataformas
 
-### Deploy Platforms
+### 2.1 Deploy no Netlify
 
-#### Netlify Deploy
+Netlify oferece deploy gratuito com CI/CD integrado.
 
-##### `netlify.toml`
+#### Arquivo `netlify.toml`
 
 ```toml
 [build]
@@ -233,49 +153,52 @@ export default defineConfig(({ mode }) => {
 [build.environment]
   NODE_VERSION = "18"
 
-# Production context
-[context.production]
-  environment = { VITE_APP_ENV = "production" }
-
-# Staging context
-[context.deploy-preview]
-  environment = { VITE_APP_ENV = "staging" }
-
-[context.branch-deploy]
-  environment = { VITE_APP_ENV = "staging" }
-
-# Redirects and rewrites
+# Redirects para SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
+# Proxy para API
 [[redirects]]
   from = "/api/*"
-  to = "https://api.example.com/api/:splat"
+  to = "https://api.backend.com/api/:splat"
   status = 200
   force = true
 
-# Headers for security
+# Headers de seguranca
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'"
 
-# Cache static assets
+# Cache para assets
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 ```
 
-#### Vercel Deploy
+#### Deploy via CLI
 
-##### `vercel.json`
+```bash
+# Instalar Netlify CLI
+npm install -g netlify-cli
+
+# Login
+netlify login
+
+# Deploy
+netlify deploy --prod
+```
+
+### 2.2 Deploy no Vercel
+
+Vercel e otimizado para aplicacoes frontend.
+
+#### Arquivo `vercel.json`
 
 ```json
 {
@@ -292,38 +215,33 @@ export default defineConfig(({ mode }) => {
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "https://api.example.com/api/$1"
+      "dest": "https://api.backend.com/api/$1"
     },
     {
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ],
-  "env": {
-    "VITE_APP_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "VITE_API_BASE_URL": "https://api.example.com/api"
-    }
-  }
+  ]
 }
 ```
 
-#### AWS S3 + CloudFront
+#### Deploy via CLI
 
-##### `deploy-aws.js`
+```bash
+# Instalar Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel --prod
+```
+
+### 2.3 Deploy na AWS S3 + CloudFront
+
+Deploy em infraestrutura AWS para maior controle.
+
+#### Script de Deploy
+
+**Arquivo: `scripts/deploy-aws.js`**
 
 ```javascript
 const AWS = require('aws-sdk')
@@ -331,44 +249,34 @@ const fs = require('fs')
 const path = require('path')
 const mime = require('mime-types')
 
-// Configure AWS
+// Configurar AWS
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION || 'us-east-1'
+  region: 'us-east-1'
 })
 
 const s3 = new AWS.S3()
 const cloudfront = new AWS.CloudFront()
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME
-const CLOUDFRONT_DISTRIBUTION_ID = process.env.CLOUDFRONT_DISTRIBUTION_ID
-const BUILD_DIR = 'dist'
+const CLOUDFRONT_ID = process.env.CLOUDFRONT_DISTRIBUTION_ID
 
-/**
- * Upload files to S3
- */
-async function uploadToS3() {
-  console.log('Starting S3 upload...')
+async function uploadDirectory(dirPath) {
+  const files = getAllFiles(dirPath)
   
-  const files = getAllFiles(BUILD_DIR)
-  const uploadPromises = files.map(uploadFile)
-  
-  await Promise.all(uploadPromises)
-  console.log('S3 upload completed!')
+  for (const file of files) {
+    await uploadFile(file)
+  }
 }
 
-/**
- * Get all files recursively
- */
 function getAllFiles(dir, files = []) {
   const fileList = fs.readdirSync(dir)
   
   for (const file of fileList) {
     const filePath = path.join(dir, file)
-    const stat = fs.statSync(filePath)
     
-    if (stat.isDirectory()) {
+    if (fs.statSync(filePath).isDirectory()) {
       getAllFiles(filePath, files)
     } else {
       files.push(filePath)
@@ -378,57 +286,34 @@ function getAllFiles(dir, files = []) {
   return files
 }
 
-/**
- * Upload single file to S3
- */
 async function uploadFile(filePath) {
   const fileContent = fs.readFileSync(filePath)
-  const key = filePath.replace(`${BUILD_DIR}/`, '').replace(/\\/g, '/')
-  const contentType = mime.lookup(filePath) || 'application/octet-stream'
+  const key = filePath.replace('dist/', '')
   
   const params = {
     Bucket: BUCKET_NAME,
     Key: key,
     Body: fileContent,
-    ContentType: contentType,
-    CacheControl: getCacheControl(key),
-    ACL: 'public-read'
+    ContentType: mime.lookup(filePath) || 'application/octet-stream',
+    CacheControl: getCacheControl(key)
   }
   
-  try {
-    await s3.upload(params).promise()
-    console.log(`Uploaded: ${key}`)
-  } catch (error) {
-    console.error(`Error uploading ${key}:`, error)
-    throw error
-  }
+  await s3.upload(params).promise()
+  console.log(`Uploaded: ${key}`)
 }
 
-/**
- * Get cache control based on file type
- */
 function getCacheControl(key) {
-  if (key.includes('assets/') && (key.endsWith('.js') || key.endsWith('.css'))) {
+  if (key.includes('/assets/')) {
     return 'public, max-age=31536000, immutable'
   }
-  
-  if (key.endsWith('.html')) {
-    return 'public, max-age=0, must-revalidate'
-  }
-  
-  return 'public, max-age=86400'
+  return 'public, max-age=0, must-revalidate'
 }
 
-/**
- * Invalidate CloudFront cache
- */
 async function invalidateCloudFront() {
-  console.log('Creating CloudFront invalidation...')
-  
   const params = {
-    DistributionId: CLOUDFRONT_DISTRIBUTION_ID,
+    DistributionId: CLOUDFRONT_ID,
     InvalidationBatch: {
-      CallerReference: `deployment-${Date.now()}`,
+      CallerReference: `deploy-${Date.now()}`,
       Paths: {
         Quantity: 1,
         Items: ['/*']
@@ -436,43 +321,32 @@ async function invalidateCloudFront() {
     }
   }
   
-  try {
-    const result = await cloudfront.createInvalidation(params).promise()
-    console.log('CloudFront invalidation created:', result.Invalidation.Id)
-  } catch (error) {
-    console.error('Error creating CloudFront invalidation:', error)
-    throw error
-  }
+  await cloudfront.createInvalidation(params).promise()
+  console.log('CloudFront invalidation created')
 }
 
-/**
- * Main deployment function
- */
 async function deploy() {
   try {
-    await uploadToS3()
+    await uploadDirectory('dist')
     await invalidateCloudFront()
-    console.log('Deployment completed successfully!')
+    console.log('Deploy completed!')
   } catch (error) {
-    console.error('Deployment failed:', error)
+    console.error('Deploy failed:', error)
     process.exit(1)
   }
 }
 
-// Run deployment
 deploy()
 ```
 
----
+## Parte 3: CI/CD com GitHub Actions
 
-### CI/CD Pipelines
+### 3.1 Pipeline Basico
 
-#### GitHub Actions
-
-##### `.github/workflows/deploy.yml`
+**Arquivo: `.github/workflows/deploy.yml`**
 
 ```yaml
-name: Deploy to Production
+name: Build and Deploy
 
 on:
   push:
@@ -482,7 +356,6 @@ on:
 
 env:
   NODE_VERSION: '18'
-  CACHE_KEY: node-modules-${{ hashFiles('**/package-lock.json') }}
 
 jobs:
   test:
@@ -501,25 +374,12 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Run tests
+      run: npm test
+      
     - name: Run linter
       run: npm run lint
-      
-    - name: Run type check
-      run: npm run type-check
-      
-    - name: Run unit tests
-      run: npm run test:coverage
-      
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage/lcov.info
-        
-    - name: Run E2E tests
-      run: |
-        npm run build
-        npm run test:e2e:ci
-        
+
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -538,258 +398,174 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Build application
+    - name: Build
       run: npm run build
       env:
-        VITE_API_BASE_URL: ${{ secrets.PROD_API_URL }}
-        VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-        VITE_GTM_ID: ${{ secrets.GTM_ID }}
+        VITE_API_BASE_URL: ${{ secrets.API_URL }}
         
-    - name: Upload build artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: build-files
+        name: dist
         path: dist
-        retention-days: 7
-        
-  deploy-staging:
+
+  deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.ref == 'refs/heads/main'
     
     steps:
-    - name: Download build artifacts
+    - name: Download artifacts
       uses: actions/download-artifact@v3
       with:
-        name: build-files
+        name: dist
         path: dist
         
-    - name: Deploy to Netlify (Preview)
+    - name: Deploy to Netlify
       uses: nwtgck/actions-netlify@v2.0
       with:
         publish-dir: './dist'
-        production-deploy: false
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        deploy-message: "Deploy from GitHub Actions"
-        enable-pull-request-comment: true
-        enable-commit-comment: false
+        production-deploy: true
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        
-  deploy-production:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      
-    - name: Download build artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: build-files
-        path: dist
-        
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-        
-    - name: Deploy to S3
-      run: |
-        aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete --cache-control "public, max-age=86400"
-        aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html --cache-control "public, max-age=0, must-revalidate"
-        
-    - name: Invalidate CloudFront
-      run: |
-        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-        
-    - name: Notify Slack
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      if: always()
-      
-  lighthouse-ci:
-    needs: deploy-production
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install Lighthouse CI
-      run: npm install -g @lhci/cli@0.12.x
-      
-    - name: Run Lighthouse CI
-      run: lhci autorun
-      env:
-        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 ```
 
-#### GitLab CI
-
-##### `.gitlab-ci.yml`
+### 3.2 Pipeline Avancado com Testes E2E
 
 ```yaml
-stages:
-  - test
-  - build
-  - deploy
+name: Complete Pipeline
 
-variables:
-  NODE_VERSION: "18"
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - run: npm ci
+    - run: npm run lint
+    - run: npm run type-check
+    
+  unit-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - run: npm ci
+    - run: npm run test:coverage
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
   
-cache:
-  paths:
-    - node_modules/
-    - .npm/
-
-before_script:
-  - npm ci --cache .npm --prefer-offline
-
-# Test stage
-test:lint:
-  stage: test
-  script:
-    - npm run lint
-
-test:unit:
-  stage: test
-  script:
-    - npm run test:coverage
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
-    paths:
-      - coverage/
-    expire_in: 1 week
-
-test:e2e:
-  stage: test
-  services:
-    - name: selenoid/vnc:chrome_78.0
-      alias: chrome
-  script:
-    - npm run build
-    - npm run test:e2e:ci
-  artifacts:
-    when: on_failure
-    paths:
-      - cypress/screenshots/
-      - cypress/videos/
-    expire_in: 1 week
-
-# Build stage
-build:
-  stage: build
-  script:
-    - npm run build
-  artifacts:
-    paths:
-      - dist/
-    expire_in: 1 week
-  only:
-    - main
-    - merge_requests
-
-# Deploy staging
-deploy:staging:
-  stage: deploy
-  script:
-    - npm install -g netlify-cli
-    - netlify deploy --dir=dist --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
-  environment:
-    name: staging
-    url: https://staging.example.com
-  only:
-    - merge_requests
-  dependencies:
-    - build
-
-# Deploy production
-deploy:production:
-  stage: deploy
-  script:
-    - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-    - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-    - aws configure set region us-east-1
-    - aws s3 sync dist/ s3://$S3_BUCKET_NAME --delete
-    - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
-  environment:
-    name: production
-    url: https://example.com
-  only:
-    - main
-  dependencies:
-    - build
-  when: manual
+  e2e-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - run: npm ci
+    - run: npm run build
+    - run: npm run test:e2e:ci
+    
+    - name: Upload screenshots
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: cypress-screenshots
+        path: cypress/screenshots
+  
+  deploy-production:
+    needs: [quality-checks, unit-tests, e2e-tests]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - run: npm ci
+    - run: npm run build
+      env:
+        VITE_API_BASE_URL: ${{ secrets.PROD_API_URL }}
+        VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        
+    - name: Deploy to AWS S3
+      run: node scripts/deploy-aws.js
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_ID }}
 ```
 
----
+## Parte 4: Docker e Containerizacao
 
-### Docker Deployment
+### 4.1 Dockerfile Multi-Stage
 
-#### `Dockerfile`
+**Arquivo: `Dockerfile`**
 
 ```dockerfile
-# Multi-stage build for production
-FROM node:18-alpine as build-stage
+# Stage 1: Build
+FROM node:18-alpine as build
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copiar arquivos de dependencias
 COPY package*.json ./
 
-# Install dependencies
+# Instalar dependencias
 RUN npm ci --only=production
 
-# Copy source code
+# Copiar codigo fonte
 COPY . .
 
-# Build application
+# Build da aplicacao
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine as production-stage
+# Stage 2: Production
+FROM nginx:alpine
 
-# Install security updates
-RUN apk update && apk upgrade
-
-# Copy custom nginx config
+# Copiar configuracao do nginx
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy built application
-COPY --from=build-stage /app/dist /usr/share/nginx/html
+# Copiar build da aplicacao
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Add health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost || exit 1
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
 
-# Expose port
 EXPOSE 80
 
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-#### `nginx.conf`
+### 4.2 Configuracao do Nginx
+
+**Arquivo: `nginx.conf`**
 
 ```nginx
 user nginx;
@@ -799,7 +575,6 @@ pid /var/run/nginx.pid;
 
 events {
     worker_connections 1024;
-    use epoll;
 }
 
 http {
@@ -808,40 +583,27 @@ http {
     
     # Logging
     log_format main '$remote_addr - $remote_user [$time_local] "$request" '
-                    '$status $body_bytes_sent "$http_referer" '
-                    '"$http_user_agent" "$http_x_forwarded_for"';
+                    '$status $body_bytes_sent "$http_referer"';
     
     access_log /var/log/nginx/access.log main;
     
     # Performance
     sendfile on;
     tcp_nopush on;
-    tcp_nodelay on;
     keepalive_timeout 65;
-    types_hash_max_size 2048;
     
-    # Gzip compression
+    # Compressao Gzip
     gzip on;
     gzip_vary on;
-    gzip_min_length 10240;
-    gzip_proxied expired no-cache no-store private must-revalidate auth;
+    gzip_min_length 1024;
     gzip_types
         text/plain
         text/css
         text/xml
         text/javascript
-        application/x-javascript
-        application/xml+rss
         application/javascript
         application/json
-        image/svg+xml;
-    
-    # Security headers
-    add_header X-Frame-Options "DENY" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline';" always;
+        application/xml+rss;
     
     server {
         listen 80;
@@ -849,60 +611,41 @@ http {
         root /usr/share/nginx/html;
         index index.html;
         
-        # Security
-        server_tokens off;
-        
-        # Main location
+        # SPA fallback
         location / {
             try_files $uri $uri/ /index.html;
-            
-            # Cache control for HTML files
-            location ~* \.html$ {
-                expires -1;
-                add_header Cache-Control "no-cache, no-store, must-revalidate";
-            }
         }
         
-        # Static assets with long-term caching
+        # Cache para assets estaticos
         location /assets {
             expires 1y;
             add_header Cache-Control "public, immutable";
         }
         
-        # API proxy (if needed)
-        location /api {
-            proxy_pass http://api-backend;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-        
-        # Health check endpoint
+        # Health check
         location /health {
             access_log off;
             return 200 "healthy\n";
             add_header Content-Type text/plain;
         }
         
-        # Error pages
-        error_page 404 /index.html;
-        error_page 500 502 503 504 /50x.html;
-        
-        location = /50x.html {
-            root /usr/share/nginx/html;
-        }
+        # Headers de seguranca
+        add_header X-Frame-Options "DENY" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header X-Content-Type-Options "nosniff" always;
     }
 }
 ```
 
-#### `docker-compose.yml`
+### 4.3 Docker Compose
+
+**Arquivo: `docker-compose.yml`**
 
 ```yaml
 version: '3.8'
 
 services:
-  vue-app:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -912,143 +655,105 @@ services:
       - NODE_ENV=production
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.vue-app.rule=Host(`example.com`)"
-      - "traefik.http.routers.vue-app.tls=true"
-      - "traefik.http.routers.vue-app.tls.certresolver=letsencrypt"
-
-  # Reverse proxy with SSL
-  traefik:
-    image: traefik:v2.9
-    command:
-      - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.letsencrypt.acme.email=admin@example.com"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - letsencrypt:/letsencrypt
-    restart: unless-stopped
-
-volumes:
-  letsencrypt:
 ```
 
----
+**Comandos Docker:**
 
-### Monitoring e Observabilidade
+```bash
+# Build da imagem
+docker build -t vue-app:latest .
 
-#### Error Tracking com Sentry
+# Executar container
+docker run -p 80:80 vue-app:latest
 
-##### `src/plugins/sentry.js`
+# Com docker-compose
+docker-compose up -d
+```
+
+## Parte 5: Monitoring e Observabilidade
+
+### 5.1 Integracao com Sentry
+
+**Arquivo: `src/plugins/sentry.js`**
 
 ```javascript
 import * as Sentry from "@sentry/vue"
-import { BrowserTracing } from "@sentry/tracing"
 import ENV from '@/config/environment'
 
 export function initSentry(app, router) {
-  if (!ENV.SENTRY_DSN) {
-    console.warn('Sentry DSN not configured')
-    return
-  }
+  if (!ENV.SENTRY_DSN) return
   
   Sentry.init({
     app,
     dsn: ENV.SENTRY_DSN,
     environment: ENV.APP_ENV,
-    release: `vue-app@${__BUILD_VERSION__}`,
     
     integrations: [
-      new BrowserTracing({
-        routingInstrumentation: Sentry.vueRouterInstrumentation(router),
-        tracePropagationTargets: ["localhost", ENV.API_BASE_URL]
+      new Sentry.BrowserTracing({
+        routingInstrumentation: Sentry.vueRouterInstrumentation(router)
       })
     ],
     
-    // Performance monitoring
     tracesSampleRate: ENV.isProduction ? 0.1 : 1.0,
     
-    // Error filtering
-    beforeSend(event, hint) {
-      // Filter out development errors
+    beforeSend(event) {
+      // Filtrar erros em desenvolvimento
       if (ENV.isDevelopment) {
-        console.error('Sentry Error:', event, hint)
+        console.error('Sentry Error:', event)
       }
-      
-      // Don't send events for network errors
-      if (event.exception?.values?.[0]?.type === 'NetworkError') {
-        return null
-      }
-      
       return event
-    },
-    
-    // User context
-    initialScope: {
-      tags: {
-        component: "frontend",
-        version: __BUILD_VERSION__
-      }
     }
   })
 }
 
-// Custom error boundary
+// Capturar excecoes customizadas
 export function captureException(error, context = {}) {
   Sentry.withScope(scope => {
     Object.keys(context).forEach(key => {
       scope.setContext(key, context[key])
     })
-    
     Sentry.captureException(error)
-  })
-}
-
-// Performance monitoring
-export function startTransaction(name, operation = 'navigation') {
-  return Sentry.startTransaction({
-    name,
-    op: operation
   })
 }
 ```
 
-#### Analytics com Google Tag Manager
+**Uso no `main.js`:**
 
-##### `src/plugins/gtm.js`
+```javascript
+import { createApp } from 'vue'
+import { createRouter } from 'vue-router'
+import App from './App.vue'
+import { initSentry } from './plugins/sentry'
+
+const app = createApp(App)
+const router = createRouter({ /* config */ })
+
+// Inicializar Sentry
+initSentry(app, router)
+
+app.use(router)
+app.mount('#app')
+```
+
+### 5.2 Google Analytics / Tag Manager
+
+**Arquivo: `src/plugins/analytics.js`**
 
 ```javascript
 import ENV from '@/config/environment'
 
 export function initGTM() {
-  if (!ENV.GTM_ID) {
-    console.warn('GTM ID not configured')
-    return
-  }
+  if (!ENV.GTM_ID) return
   
-  // Load GTM script
   const script = document.createElement('script')
   script.async = true
   script.src = `https://www.googletagmanager.com/gtm.js?id=${ENV.GTM_ID}`
   document.head.appendChild(script)
   
-  // GTM initialization
   window.dataLayer = window.dataLayer || []
   window.dataLayer.push({
     'gtm.start': new Date().getTime(),
@@ -1056,8 +761,8 @@ export function initGTM() {
   })
 }
 
-// Track events
-export function trackEvent(action, category = 'General', label = '', value = 0) {
+// Rastrear eventos
+export function trackEvent(action, category, label, value) {
   if (!window.dataLayer) return
   
   window.dataLayer.push({
@@ -1069,305 +774,192 @@ export function trackEvent(action, category = 'General', label = '', value = 0) 
   })
 }
 
-// Track page views
-export function trackPageView(pagePath, pageTitle) {
+// Rastrear pageviews
+export function trackPageView(path, title) {
   if (!window.dataLayer) return
   
   window.dataLayer.push({
     event: 'page_view',
-    page_path: pagePath,
-    page_title: pageTitle
-  })
-}
-
-// E-commerce tracking
-export function trackPurchase(transactionId, items, value) {
-  if (!window.dataLayer) return
-  
-  window.dataLayer.push({
-    event: 'purchase',
-    transaction_id: transactionId,
-    value: value,
-    currency: 'BRL',
-    items: items
+    page_path: path,
+    page_title: title
   })
 }
 ```
 
----
+## Parte 6: Estrategias de Rollback
 
-### Rollback e Deployment Strategies
+### 6.1 Versionamento de Deploys
 
-#### Blue-Green Deployment Script
+Manter versoes anteriores para rollback rapido:
 
-##### `scripts/blue-green-deploy.js`
+```bash
+# AWS S3 - Versionamento habilitado
+aws s3 cp dist/ s3://bucket/releases/v1.2.3/ --recursive
+aws s3 cp s3://bucket/releases/v1.2.3/ s3://bucket/current/ --recursive
+
+# Rollback para versao anterior
+aws s3 cp s3://bucket/releases/v1.2.2/ s3://bucket/current/ --recursive
+```
+
+### 6.2 Blue-Green Deployment
+
+**Script simplificado:**
 
 ```javascript
-const AWS = require('aws-sdk')
-
-// Configure AWS
-const cloudfront = new AWS.CloudFront()
-const s3 = new AWS.S3()
-
-const DISTRIBUTION_ID = process.env.CLOUDFRONT_DISTRIBUTION_ID
-const BLUE_BUCKET = process.env.BLUE_BUCKET_NAME
-const GREEN_BUCKET = process.env.GREEN_BUCKET_NAME
-
-/**
- * Blue-Green Deployment Strategy
- */
+// scripts/blue-green-deploy.js
 class BlueGreenDeployment {
   constructor() {
-    this.currentEnv = null
-    this.targetEnv = null
+    this.blueEnv = 'blue-bucket'
+    this.greenEnv = 'green-bucket'
+    this.current = null
   }
   
   async getCurrentEnvironment() {
-    try {
-      const config = await cloudfront.getDistributionConfig({
-        Id: DISTRIBUTION_ID
-      }).promise()
-      
-      const origin = config.DistributionConfig.Origins.Items[0]
-      const bucketName = origin.DomainName.split('.')[0]
-      
-      this.currentEnv = bucketName === BLUE_BUCKET ? 'blue' : 'green'
-      this.targetEnv = this.currentEnv === 'blue' ? 'green' : 'blue'
-      
-      console.log(`Current environment: ${this.currentEnv}`)
-      console.log(`Target environment: ${this.targetEnv}`)
-      
-      return this.currentEnv
-    } catch (error) {
-      console.error('Error getting current environment:', error)
-      throw error
-    }
+    // Verificar qual ambiente esta ativo
+    // Retorna 'blue' ou 'green'
   }
   
-  async deployToTarget() {
-    const targetBucket = this.targetEnv === 'blue' ? BLUE_BUCKET : GREEN_BUCKET
+  async deployToInactive() {
+    const target = this.current === 'blue' ? 'green' : 'blue'
+    console.log(`Deploying to ${target}`)
     
-    console.log(`Deploying to ${this.targetEnv} environment (${targetBucket})`)
+    // Upload files para ambiente inativo
+    await this.uploadFiles(target)
     
-    try {
-      // Upload files to target bucket
-      await this.uploadFiles(targetBucket)
-      console.log('Files uploaded successfully')
-      
-      // Run health checks
-      await this.runHealthChecks(targetBucket)
-      console.log('Health checks passed')
-      
-      return true
-    } catch (error) {
-      console.error('Deployment to target failed:', error)
-      throw error
-    }
+    // Executar health checks
+    await this.healthCheck(target)
   }
   
   async switchTraffic() {
-    try {
-      console.log(`Switching traffic to ${this.targetEnv}`)
-      
-      const config = await cloudfront.getDistributionConfig({
-        Id: DISTRIBUTION_ID
-      }).promise()
-      
-      const distributionConfig = config.DistributionConfig
-      const targetBucket = this.targetEnv === 'blue' ? BLUE_BUCKET : GREEN_BUCKET
-      
-      // Update origin to point to target bucket
-      distributionConfig.Origins.Items[0].DomainName = `${targetBucket}.s3.amazonaws.com`
-      
-      await cloudfront.updateDistribution({
-        Id: DISTRIBUTION_ID,
-        DistributionConfig: distributionConfig,
-        IfMatch: config.ETag
-      }).promise()
-      
-      console.log('Traffic switched successfully')
-      
-      // Create invalidation
-      await cloudfront.createInvalidation({
-        DistributionId: DISTRIBUTION_ID,
-        InvalidationBatch: {
-          CallerReference: `switch-${Date.now()}`,
-          Paths: {
-            Quantity: 1,
-            Items: ['/*']
-          }
-        }
-      }).promise()
-      
-      console.log('CloudFront invalidation created')
-      
-    } catch (error) {
-      console.error('Error switching traffic:', error)
-      throw error
-    }
+    // Alternar trafego para novo ambiente
+    console.log('Switching traffic')
   }
   
   async rollback() {
-    try {
-      console.log(`Rolling back to ${this.currentEnv}`)
-      
-      const config = await cloudfront.getDistributionConfig({
-        Id: DISTRIBUTION_ID
-      }).promise()
-      
-      const distributionConfig = config.DistributionConfig
-      const currentBucket = this.currentEnv === 'blue' ? BLUE_BUCKET : GREEN_BUCKET
-      
-      // Revert origin back to current bucket
-      distributionConfig.Origins.Items[0].DomainName = `${currentBucket}.s3.amazonaws.com`
-      
-      await cloudfront.updateDistribution({
-        Id: DISTRIBUTION_ID,
-        DistributionConfig: distributionConfig,
-        IfMatch: config.ETag
-      }).promise()
-      
-      console.log('Rollback completed successfully')
-      
-    } catch (error) {
-      console.error('Error during rollback:', error)
-      throw error
-    }
+    // Voltar para ambiente anterior
+    console.log('Rolling back')
   }
-  
-  async uploadFiles(bucketName) {
-    // Implementation similar to previous S3 upload script
-    // This would upload the dist files to the specified bucket
-    console.log(`Uploading files to ${bucketName}`)
-    // ... upload logic
-  }
-  
-  async runHealthChecks(bucketName) {
-    // Implement health checks for the target environment
-    console.log(`Running health checks for ${bucketName}`)
-    
-    const testUrl = `https://${bucketName}.s3.amazonaws.com/health`
-    
-    try {
-      const response = await fetch(testUrl)
-      if (!response.ok) {
-        throw new Error(`Health check failed with status: ${response.status}`)
-      }
-      return true
-    } catch (error) {
-      throw new Error(`Health check failed: ${error.message}`)
-    }
-  }
-}
-
-// Usage
-async function deploy() {
-  const deployment = new BlueGreenDeployment()
-  
-  try {
-    await deployment.getCurrentEnvironment()
-    await deployment.deployToTarget()
-    await deployment.switchTraffic()
-    
-    console.log('Deployment completed successfully!')
-  } catch (error) {
-    console.error('Deployment failed, initiating rollback...')
-    await deployment.rollback()
-    process.exit(1)
-  }
-}
-
-// Command line interface
-const command = process.argv[2]
-
-switch (command) {
-  case 'deploy':
-    deploy()
-    break
-  case 'rollback':
-    const deployment = new BlueGreenDeployment()
-    deployment.getCurrentEnvironment().then(() => deployment.rollback())
-    break
-  default:
-    console.log('Usage: node blue-green-deploy.js [deploy|rollback]')
 }
 ```
 
----
+### 6.3 Canary Deployment
 
-### Scripts Package.json
+Liberar gradualmente para um percentual de usuarios:
+
+```nginx
+# nginx.conf - Split traffic
+upstream backend {
+    server app-v1.example.com weight=9;
+    server app-v2.example.com weight=1;
+}
+```
+
+## Parte 7: Performance e Otimizacao
+
+### 7.1 Analise de Bundle
+
+```bash
+# Instalar analisador
+npm install --save-dev rollup-plugin-visualizer
+
+# Adicionar ao vite.config.js
+import { visualizer } from 'rollup-plugin-visualizer'
+
+export default defineConfig({
+  plugins: [
+    vue(),
+    visualizer({
+      open: true,
+      gzipSize: true,
+      brotliSize: true
+    })
+  ]
+})
+
+# Gerar analise
+npm run build
+```
+
+### 7.2 Lazy Loading de Rotas
+
+```javascript
+// router/index.js
+const routes = [
+  {
+    path: '/',
+    component: () => import('@/views/Home.vue')
+  },
+  {
+    path: '/about',
+    component: () => import('@/views/About.vue')
+  },
+  {
+    path: '/dashboard',
+    component: () => import('@/views/Dashboard.vue')
+  }
+]
+```
+
+### 7.3 Preload de Assets Criticos
+
+```html
+<!-- index.html -->
+<head>
+  <link rel="preload" href="/assets/logo.svg" as="image">
+  <link rel="preload" href="/assets/fonts/main.woff2" as="font" crossorigin>
+</head>
+```
+
+## Comandos Uteis
+
+### Scripts do package.json
 
 ```json
 {
   "scripts": {
     "dev": "vite",
-    "build": "vite build --config vite.config.production.js",
+    "build": "vite build",
     "build:staging": "vite build --mode staging",
     "preview": "vite preview",
-    "lint": "eslint src --ext .vue,.js,.jsx,.cjs,.mjs --fix",
-    "type-check": "vue-tsc --noEmit",
+    "lint": "eslint src --ext .vue,.js",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "cypress open",
-    "test:e2e:ci": "cypress run",
+    "test:e2e": "cypress run",
+    "deploy:netlify": "netlify deploy --prod",
     "deploy:aws": "node scripts/deploy-aws.js",
-    "deploy:blue-green": "node scripts/blue-green-deploy.js deploy",
-    "rollback": "node scripts/blue-green-deploy.js rollback",
-    "lighthouse": "lhci autorun",
-    "analyze": "npm run build && npx vite-bundle-analyzer dist"
+    "analyze": "vite-bundle-visualizer"
   }
 }
 ```
 
----
-
-### Exercícios Práticos
-
-#### Exercício 1: Multi-Environment Setup
-Configurar três ambientes completos:
-- Development com hot-reload
-- Staging com source maps
-- Production otimizada
-
-#### Exercício 2: Pipeline Completo
-Implementar pipeline que inclui:
-- Testes automatizados
-- Security scanning
-- Performance budgets
-- Automated rollback
-
-#### Exercício 3: Monitoring Setup
-Configurar monitoramento completo:
-- Error tracking
-- Performance monitoring
-- Business metrics
-- Alerting system
-
----
-
-### Comandos Git
+### Verificacao Pre-Deploy
 
 ```bash
-git add .
-git commit -m "Aula 11 - Deploy e CI/CD"
+# 1. Executar testes
+npm test
+
+# 2. Verificar linter
+npm run lint
+
+# 3. Build de producao
+npm run build
+
+# 4. Preview local
+npm run preview
+
+# 5. Analisar bundle
+npm run analyze
 ```
 
----
+## Checklist de Deploy
 
-### Curso Concluído! 🎉
-
-Parabéns! Você completou o **Curso Completo de Vue.js**, cobrindo desde os conceitos básicos até tópicos avançados como deployment e CI/CD.
-
-**Você aprendeu:**
-- ✅ Fundamentos do Vue.js 3
-- ✅ Composition API e reatividade
-- ✅ Comunicação com APIs (Axios)
-- ✅ Roteamento com Vue Router
-- ✅ Formulários e validação avançada
-- ✅ Gerenciamento de estado com Pinia
-- ✅ Autenticação JWT completa
-- ✅ Testes unitários e E2E
-- ✅ Performance e otimização
-- ✅ Deploy e CI/CD
-
-**Continue praticando** e construa projetos incríveis com Vue.js!
+- [ ] Todas as variaveis de ambiente configuradas
+- [ ] Testes passando (unit + e2e)
+- [ ] Build de producao sem erros
+- [ ] Bundle size dentro do limite
+- [ ] Performance Lighthouse > 90
+- [ ] Headers de seguranca configurados
+- [ ] Monitoring (Sentry) configurado
+- [ ] Analytics configurado
+- [ ] Backup da versao anterior
+- [ ] Plano de rollback definido
+- [ ] Documentacao atualizada

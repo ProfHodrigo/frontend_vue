@@ -205,3 +205,41 @@ export const validators = {
     return hasUpper && hasLower && hasNumber && hasSpecial && isLongEnough
   }
 }
+
+// Funções simples de validação (usadas nos exemplos da Aula 9)
+/**
+ * Valida formato de email
+ * @param {string} email - Email a ser validado
+ * @returns {boolean} - true se válido, false caso contrário
+ */
+export function validarEmail(email) {
+  if (!email) return false
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email)
+}
+
+/**
+ * Valida formato de CPF (apenas formato, não valida dígitos verificadores)
+ * @param {string} cpf - CPF a ser validado
+ * @returns {boolean} - true se válido, false caso contrário
+ */
+export function validarCPF(cpf) {
+  if (!cpf) return false
+  // Remove caracteres não numéricos
+  const cpfLimpo = cpf.replace(/\D/g, '')
+  // Verifica se tem 11 dígitos
+  return cpfLimpo.length === 11
+}
+
+/**
+ * Valida formato de telefone brasileiro
+ * @param {string} telefone - Telefone a ser validado
+ * @returns {boolean} - true se válido, false caso contrário
+ */
+export function validarTelefone(telefone) {
+  if (!telefone) return false
+  // Remove caracteres não numéricos
+  const telefoneLimpo = telefone.replace(/\D/g, '')
+  // Aceita telefone com 10 ou 11 dígitos (com ou sem 9 no celular)
+  return telefoneLimpo.length === 10 || telefoneLimpo.length === 11
+}

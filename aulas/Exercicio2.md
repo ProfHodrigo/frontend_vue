@@ -1,592 +1,312 @@
-# Test 2: Testar Componente de Formulario
+# Exercício 2: Testar Validações com Vitest
 
 ## Objetivo
 
-Criar testes completos para um componente de formulario com validacoes, incluindo renderizacao, interacoes do usuario, mensagens de erro e submit.
+Criar testes completos para funções de validação, praticando testes unitários simples e efetivos com Vitest.
 
 ---
 
 ## Contexto
 
-Testes de formularios verificam se campos sao validados corretamente, mensagens de erro aparecem e o submit funciona. Este e um dos testes mais importantes em aplicacoes.
+Você já viu exemplos de testes para componentes (Counter.vue e UserCard.vue). Agora vamos praticar testando funções utilitárias de validação que são fundamentais em qualquer aplicação.
 
 ---
 
-## Passo 1: Revisar o Componente de Formulario
+## Passo 1: Revisar as Funções de Validação
 
-Arquivo `src/components/FormularioProduto.vue`:
+O arquivo `src/utils/validators.js` possui várias funções de validação. Vamos testar as funções **simples** (não a classe FormValidator):
 
-```vue
-<template>
-  <form @submit.prevent="handleSubmit" class="formulario-produto">
-    <h2>Cadastrar Produto</h2>
-    
-    <div class="campo">
-      <label for="nome">Nome do Produto</label>
-      <input 
-        id="nome"
-        v-model="form.nome" 
-        @blur="validateField('nome')"
-        :class="{ erro: erros.nome }"
-      >
-      <span v-if="erros.nome" class="mensagem-erro">{{ erros.nome }}</span>
-    </div>
-    
-    <div class="campo">
-      <label for="preco">Preco</label>
-      <input 
-        id="preco"
-        v-model.number="form.preco" 
-        type="number"
-        step="0.01"
-        @blur="validateField('preco')"
-        :class="{ erro: erros.preco }"
-      >
-      <span v-if="erros.preco" class="mensagem-erro">{{ erros.preco }}</span>
-    </div>
-    
-    <div class="campo">
-      <label for="estoque">Estoque</label>
-      <input 
-        id="estoque"
-        v-model.number="form.estoque" 
-        type="number"
-        @blur="validateField('estoque')"
-        :class="{ erro: erros.estoque }"
-      >
-      <span v-if="erros.estoque" class="mensagem-erro">{{ erros.estoque }}</span>
-    </div>
-    
-    <div class="campo">
-      <label for="categoria">Categoria</label>
-      <select 
-        id="categoria"
-        v-model="form.categoria"
-        @blur="validateField('categoria')"
-        :class="{ erro: erros.categoria }"
-      >
-        <option value="">Selecione...</option>
-        <option value="eletronicos">Eletronicos</option>
-        <option value="livros">Livros</option>
-        <option value="roupas">Roupas</option>
-      </select>
-      <span v-if="erros.categoria" class="mensagem-erro">{{ erros.categoria }}</span>
-    </div>
-    
-    <div class="acoes">
-      <button type="submit" :disabled="enviando || !formularioValido">
-        {{ enviando ? 'Salvando...' : 'Salvar Produto' }}
-      </button>
-      <button type="button" @click="limparFormulario">Limpar</button>
-    </div>
-    
-    <div v-if="mensagemSucesso" class="sucesso">
-      {{ mensagemSucesso }}
-    </div>
-  </form>
-</template>
-
-<script>
-export default {
-  name: 'FormularioProduto',
-  data() {
-    return {
-      form: {
-        nome: '',
-        preco: null,
-        estoque: null,
-        categoria: ''
-      },
-      erros: {
-        nome: '',
-        preco: '',
-        estoque: '',
-        categoria: ''
-      },
-      enviando: false,
-      mensagemSucesso: ''
-    }
-  },
-  computed: {
-    formularioValido() {
-      return this.form.nome && 
-             this.form.preco && 
-             this.form.estoque !== null && 
-             this.form.categoria &&
-             !this.erros.nome &&
-             !this.erros.preco &&
-             !this.erros.estoque &&
-             !this.erros.categoria
-    }
-  },
-  methods: {
-    validateField(campo) {
-      this.erros[campo] = ''
-      
-      if (campo === 'nome') {
-        if (!this.form.nome) {
-          this.erros.nome = 'Nome é obrigatorio'
-        } else if (this.form.nome.length < 3) {
-          this.erros.nome = 'Nome deve ter no minimo 3 caracteres'
-        }
-      }
-      
-      if (campo === 'preco') {
-        if (!this.form.preco) {
-          this.erros.preco = 'Preco é obrigatorio'
-        } else if (this.form.preco <= 0) {
-          this.erros.preco = 'Preco deve ser maior que zero'
-        }
-      }
-      
-      if (campo === 'estoque') {
-        if (this.form.estoque === null || this.form.estoque === '') {
-          this.erros.estoque = 'Estoque é obrigatorio'
-        } else if (this.form.estoque < 0) {
-          this.erros.estoque = 'Estoque nao pode ser negativo'
-        }
-      }
-      
-      if (campo === 'categoria') {
-        if (!this.form.categoria) {
-          this.erros.categoria = 'Categoria é obrigatoria'
-        }
-      }
-    },
-    
-    async handleSubmit() {
-      // Valida todos os campos
-      Object.keys(this.form).forEach(campo => {
-        this.validateField(campo)
-      })
-      
-      if (!this.formularioValido) {
-        return
-      }
-      
-      this.enviando = true
-      this.mensagemSucesso = ''
-      
-      try {
-        // Simula envio para API
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        this.$emit('produto-cadastrado', { ...this.form })
-        this.mensagemSucesso = 'Produto cadastrado com sucesso!'
-        this.limparFormulario()
-      } catch (error) {
-        console.error(error)
-      } finally {
-        this.enviando = false
-      }
-    },
-    
-    limparFormulario() {
-      this.form = {
-        nome: '',
-        preco: null,
-        estoque: null,
-        categoria: ''
-      }
-      this.erros = {
-        nome: '',
-        preco: '',
-        estoque: '',
-        categoria: ''
-      }
-      this.mensagemSucesso = ''
-    }
-  }
-}
-</script>
+```javascript
+// Funções que vamos testar:
+export function validarEmail(email) { ... }
+export function validarCPF(cpf) { ... }
+export function validarTelefone(telefone) { ... }
 ```
+
+**Dica**: Abra o arquivo `src/utils/validators.js` para ver a implementação completa.
 
 ---
 
 ## Passo 2: Criar Arquivo de Teste
 
-Crie `tests/unit/components/FormularioProduto.spec.js`:
+Crie o arquivo `tests/unit/utils/validators.spec.js` (se não existir).
+
+### Estrutura Básica
 
 ```javascript
-import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
-import FormularioProduto from '@/components/FormularioProduto.vue'
+import { describe, it, expect } from 'vitest'
+import { validarEmail, validarCPF, validarTelefone } from '@/utils/validators'
 
-describe('FormularioProduto.vue', () => {
-  let wrapper
-  
-  beforeEach(() => {
-    wrapper = mount(FormularioProduto)
-  })
-  
-  describe('renderizacao inicial', () => {
-    it('deve renderizar formulario com todos os campos', () => {
-      expect(wrapper.find('#nome').exists()).toBe(true)
-      expect(wrapper.find('#preco').exists()).toBe(true)
-      expect(wrapper.find('#estoque').exists()).toBe(true)
-      expect(wrapper.find('#categoria').exists()).toBe(true)
-    })
-    
-    it('deve renderizar botao de submit', () => {
-      const submitBtn = wrapper.find('button[type="submit"]')
-      expect(submitBtn.text()).toBe('Salvar Produto')
-    })
-    
-    it('deve renderizar botao de limpar', () => {
-      const clearBtn = wrapper.find('button[type="button"]')
-      expect(clearBtn.text()).toBe('Limpar')
-    })
-    
-    it('deve inicializar campos vazios', () => {
-      expect(wrapper.find('#nome').element.value).toBe('')
-      expect(wrapper.find('#preco').element.value).toBe('')
-      expect(wrapper.find('#estoque').element.value).toBe('')
-      expect(wrapper.find('#categoria').element.value).toBe('')
-    })
-    
-    it('deve desabilitar botao submit inicialmente', () => {
-      const submitBtn = wrapper.find('button[type="submit"]')
-      expect(submitBtn.attributes('disabled')).toBeDefined()
-    })
-  })
-  
-  describe('validacao de nome', () => {
-    it('deve mostrar erro quando nome vazio', async () => {
-      const input = wrapper.find('#nome')
-      await input.setValue('')
-      await input.trigger('blur')
-      
-      expect(wrapper.text()).toContain('Nome é obrigatorio')
-    })
-    
-    it('deve mostrar erro quando nome tem menos de 3 caracteres', async () => {
-      const input = wrapper.find('#nome')
-      await input.setValue('Ab')
-      await input.trigger('blur')
-      
-      expect(wrapper.text()).toContain('Nome deve ter no minimo 3 caracteres')
-    })
-    
-    it('deve aceitar nome valido', async () => {
-      const input = wrapper.find('#nome')
-      await input.setValue('Produto Valido')
-      await input.trigger('blur')
-      
-      expect(wrapper.find('.mensagem-erro').exists()).toBe(false)
-    })
-    
-    it('deve adicionar classe erro no input quando invalido', async () => {
-      const input = wrapper.find('#nome')
-      await input.setValue('')
-      await input.trigger('blur')
-      
-      expect(input.classes()).toContain('erro')
-    })
-  })
-  
-  describe('validacao de preco', () => {
-    it('deve mostrar erro quando preco vazio', async () => {
-      const input = wrapper.find('#preco')
-      await input.setValue('')
-      await input.trigger('blur')
-      
-      expect(wrapper.text()).toContain('Preco é obrigatorio')
-    })
-    
-    it('deve mostrar erro quando preco menor ou igual a zero', async () => {
-      const input = wrapper.find('#preco')
-      await input.setValue(0)
-      await input.trigger('blur')
-      
-      expect(wrapper.text()).toContain('Preco deve ser maior que zero')
-    })
-    
-    it('deve aceitar preco valido', async () => {
-      const input = wrapper.find('#preco')
-      await input.setValue(99.99)
-      await input.trigger('blur')
-      
-      const erros = wrapper.findAll('.mensagem-erro')
-      const erroPreco = erros.find(el => el.text().includes('Preco'))
-      expect(erroPreco).toBeUndefined()
-    })
-  })
-  
-  describe('validacao de estoque', () => {
-    it('deve mostrar erro quando estoque vazio', async () => {
-      const input = wrapper.find('#estoque')
-      await input.setValue('')
-      await input.trigger('blur')
-      
-      expect(wrapper.text()).toContain('Estoque é obrigatorio')
-    })
-    
-    it('deve mostrar erro quando estoque negativo', async () => {
-      const input = wrapper.find('#estoque')
-      await input.setValue(-1)
-      await input.trigger('blur')
-      
-      expect(wrapper.text()).toContain('Estoque nao pode ser negativo')
-    })
-    
-    it('deve aceitar estoque zero', async () => {
-      const input = wrapper.find('#estoque')
-      await input.setValue(0)
-      await input.trigger('blur')
-      
-      const erros = wrapper.findAll('.mensagem-erro')
-      const erroEstoque = erros.find(el => el.text().includes('Estoque'))
-      expect(erroEstoque).toBeUndefined()
-    })
-  })
-  
-  describe('validacao de categoria', () => {
-    it('deve mostrar erro quando categoria nao selecionada', async () => {
-      const select = wrapper.find('#categoria')
-      await select.setValue('')
-      await select.trigger('blur')
-      
-      expect(wrapper.text()).toContain('Categoria é obrigatoria')
-    })
-    
-    it('deve aceitar categoria valida', async () => {
-      const select = wrapper.find('#categoria')
-      await select.setValue('eletronicos')
-      await select.trigger('blur')
-      
-      const erros = wrapper.findAll('.mensagem-erro')
-      const erroCategoria = erros.find(el => el.text().includes('Categoria'))
-      expect(erroCategoria).toBeUndefined()
-    })
-    
-    it('deve ter opcoes de categoria', () => {
-      const select = wrapper.find('#categoria')
-      const options = select.findAll('option')
-      
-      expect(options).toHaveLength(4) // 1 vazia + 3 categorias
-      expect(options[1].text()).toBe('Eletronicos')
-      expect(options[2].text()).toBe('Livros')
-      expect(options[3].text()).toBe('Roupas')
-    })
-  })
-  
-  describe('submit do formulario', () => {
-    it('nao deve submeter formulario invalido', async () => {
-      const form = wrapper.find('form')
-      await form.trigger('submit.prevent')
-      
-      expect(wrapper.emitted('produto-cadastrado')).toBeUndefined()
-    })
-    
-    it('deve submeter formulario valido', async () => {
-      await wrapper.find('#nome').setValue('Notebook')
-      await wrapper.find('#preco').setValue(2500)
-      await wrapper.find('#estoque').setValue(10)
-      await wrapper.find('#categoria').setValue('eletronicos')
-      
-      const form = wrapper.find('form')
-      await form.trigger('submit.prevent')
-      
-      // Aguarda processamento assincrono
-      await nextTick()
-      await nextTick()
-      
-      expect(wrapper.emitted('produto-cadastrado')).toBeTruthy()
-    })
-    
-    it('deve emitir dados corretos ao submeter', async () => {
-      const produtoData = {
-        nome: 'Mouse Gamer',
-        preco: 150,
-        estoque: 50,
-        categoria: 'eletronicos'
-      }
-      
-      await wrapper.find('#nome').setValue(produtoData.nome)
-      await wrapper.find('#preco').setValue(produtoData.preco)
-      await wrapper.find('#estoque').setValue(produtoData.estoque)
-      await wrapper.find('#categoria').setValue(produtoData.categoria)
-      
-      const form = wrapper.find('form')
-      await form.trigger('submit.prevent')
-      
-      await nextTick()
-      await nextTick()
-      
-      const emitted = wrapper.emitted('produto-cadastrado')
-      expect(emitted[0][0]).toEqual(produtoData)
-    })
-    
-    it('deve mostrar loading durante submit', async () => {
-      await wrapper.find('#nome').setValue('Teste')
-      await wrapper.find('#preco').setValue(100)
-      await wrapper.find('#estoque').setValue(5)
-      await wrapper.find('#categoria').setValue('livros')
-      
-      const form = wrapper.find('form')
-      form.trigger('submit.prevent')
-      
-      await nextTick()
-      
-      const submitBtn = wrapper.find('button[type="submit"]')
-      expect(submitBtn.text()).toBe('Salvando...')
-      expect(submitBtn.attributes('disabled')).toBeDefined()
-    })
-    
-    it('deve mostrar mensagem de sucesso apos submit', async () => {
-      await wrapper.find('#nome').setValue('Teste')
-      await wrapper.find('#preco').setValue(100)
-      await wrapper.find('#estoque').setValue(5)
-      await wrapper.find('#categoria').setValue('livros')
-      
-      const form = wrapper.find('form')
-      await form.trigger('submit.prevent')
-      
-      // Aguarda processamento e timeout do simula envio
-      await new Promise(resolve => setTimeout(resolve, 1100))
-      await nextTick()
-      
-      expect(wrapper.find('.sucesso').text()).toBe('Produto cadastrado com sucesso!')
-    })
-    
-    it('deve limpar formulario apos submit com sucesso', async () => {
-      await wrapper.find('#nome').setValue('Teste')
-      await wrapper.find('#preco').setValue(100)
-      await wrapper.find('#estoque').setValue(5)
-      await wrapper.find('#categoria').setValue('livros')
-      
-      const form = wrapper.find('form')
-      await form.trigger('submit.prevent')
-      
-      await new Promise(resolve => setTimeout(resolve, 1100))
-      await nextTick()
-      
-      expect(wrapper.find('#nome').element.value).toBe('')
-      expect(wrapper.find('#preco').element.value).toBe('')
-      expect(wrapper.find('#estoque').element.value).toBe('')
-      expect(wrapper.find('#categoria').element.value).toBe('')
-    })
-  })
-  
-  describe('botao limpar', () => {
-    it('deve limpar todos os campos', async () => {
-      await wrapper.find('#nome').setValue('Teste')
-      await wrapper.find('#preco').setValue(100)
-      await wrapper.find('#estoque').setValue(5)
-      await wrapper.find('#categoria').setValue('livros')
-      
-      const clearBtn = wrapper.find('button[type="button"]')
-      await clearBtn.trigger('click')
-      
-      expect(wrapper.find('#nome').element.value).toBe('')
-      expect(wrapper.find('#preco').element.value).toBe('')
-      expect(wrapper.find('#estoque').element.value).toBe('')
-      expect(wrapper.find('#categoria').element.value).toBe('')
-    })
-    
-    it('deve limpar mensagens de erro', async () => {
-      await wrapper.find('#nome').setValue('')
-      await wrapper.find('#nome').trigger('blur')
-      
-      expect(wrapper.text()).toContain('Nome é obrigatorio')
-      
-      const clearBtn = wrapper.find('button[type="button"]')
-      await clearBtn.trigger('click')
-      
-      expect(wrapper.find('.mensagem-erro').exists()).toBe(false)
-    })
-    
-    it('deve limpar mensagem de sucesso', async () => {
-      wrapper.vm.mensagemSucesso = 'Sucesso!'
-      await nextTick()
-      
-      const clearBtn = wrapper.find('button[type="button"]')
-      await clearBtn.trigger('click')
-      
-      expect(wrapper.find('.sucesso').exists()).toBe(false)
-    })
-  })
-  
-  describe('computed formularioValido', () => {
-    it('deve retornar false quando formulario vazio', () => {
-      expect(wrapper.vm.formularioValido).toBe(false)
-    })
-    
-    it('deve retornar false quando tem erros de validacao', async () => {
-      await wrapper.find('#nome').setValue('Ab') // Nome muito curto
-      await wrapper.find('#nome').trigger('blur')
-      await wrapper.find('#preco').setValue(100)
-      await wrapper.find('#estoque').setValue(5)
-      await wrapper.find('#categoria').setValue('livros')
-      
-      expect(wrapper.vm.formularioValido).toBe(false)
-    })
-    
-    it('deve retornar true quando formulario valido', async () => {
-      await wrapper.find('#nome').setValue('Produto Teste')
-      await wrapper.find('#preco').setValue(100)
-      await wrapper.find('#estoque').setValue(5)
-      await wrapper.find('#categoria').setValue('livros')
-      
-      expect(wrapper.vm.formularioValido).toBe(true)
-    })
-  })
+describe('Validators', () => {
+  // Seus testes aqui
 })
 ```
 
 ---
 
-## Passo 3: Executar Testes
+## Passo 3: Implementar Testes para validarEmail
 
-```bash
-npm test FormularioProduto.spec.js
+### Casos de teste a implementar:
+
+1. **Deve validar email correto**
+   - Testar: `'teste@exemplo.com'`, `'user@dominio.com.br'`
+   - Esperar: `true`
+
+2. **Deve rejeitar email sem @**
+   - Testar: `'teste.exemplo.com'`
+   - Esperar: `false`
+
+3. **Deve rejeitar email sem domínio**
+   - Testar: `'teste@'`, `'teste@.'`
+   - Esperar: `false`
+
+4. **Deve rejeitar string vazia**
+   - Testar: `''`
+   - Esperar: `false`
+
+5. **Deve rejeitar email com espaços**
+   - Testar: `'teste @exemplo.com'`, `'teste@exemplo .com'`
+   - Esperar: `false`
+
+### Exemplo de implementação:
+
+```javascript
+describe('validarEmail', () => {
+  it('deve validar email correto', () => {
+    expect(validarEmail('teste@exemplo.com')).toBe(true)
+    expect(validarEmail('user@dominio.com.br')).toBe(true)
+  })
+  
+  // Implemente os outros testes...
+})
 ```
-
-Resultado esperado: todos os 35+ testes devem passar.
 
 ---
 
-## Passo 4: Verificar Cobertura
+## Passo 4: Implementar Testes para validarCPF
 
-```bash
-npm run test:coverage -- FormularioProduto.spec.js
+### Casos de teste a implementar:
+
+1. **Deve validar CPF correto**
+   - Testar: `'11144477735'` (CPF válido sem formatação)
+   - Esperar: `true`
+
+2. **Deve validar CPF com formatação**
+   - Testar: `'111.444.777-35'`
+   - Esperar: `true`
+
+3. **Deve rejeitar CPF inválido**
+   - Testar: `'12345678901'`
+   - Esperar: `false`
+
+4. **Deve rejeitar CPF com todos dígitos iguais**
+   - Testar: `'11111111111'`, `'00000000000'`, `'99999999999'`
+   - Esperar: `false`
+
+5. **Deve rejeitar CPF com tamanho incorreto**
+   - Testar: `'123'`, `'123456789012'`
+   - Esperar: `false`
+
+### Estrutura:
+
+```javascript
+describe('validarCPF', () => {
+  it('deve validar CPF correto', () => {
+    // Seu código aqui
+  })
+  
+  // Implemente os outros testes...
+})
 ```
-
-O componente deve ter alta cobertura em:
-- Renderizacao de elementos
-- Validacoes de campos
-- Interacoes do usuario
-- Submit do formulario
 
 ---
 
-## O que Aprendemos
+## Passo 5: Implementar Testes para validarTelefone
 
-1. **Testar renderizacao inicial**
-   - Verificar existencia de elementos
-   - Verificar valores iniciais
-   - Verificar estados de botoes
+### Casos de teste a implementar:
 
-2. **Testar validacoes de campos**
-   - Mensagens de erro
-   - Classes CSS condicionais
-   - Diferentes tipos de validacao
+1. **Deve validar telefone fixo (10 dígitos)**
+   - Testar: `'1133334444'`
+   - Esperar: `true`
 
-3. **Testar interacoes do usuario**
-   - `setValue()` para inputs
-   - `trigger('blur')` para validacao
-   - `trigger('click')` para botoes
+2. **Deve validar celular (11 dígitos)**
+   - Testar: `'11999998888'`
+   - Esperar: `true`
 
-4. **Testar submit de formulario**
-   - Prevenir submit invalido
-   - Emitir eventos com dados
-   - Estados de loading
-   - Mensagens de sucesso
+3. **Deve validar com formatação**
+   - Testar: `'(11) 3333-4444'`, `'(11) 99999-8888'`
+   - Esperar: `true`
 
-5. **Usar `nextTick()`**
-   - Aguardar atualizacoes do DOM
-   - Lidar com operacoes assincronas
+4. **Deve rejeitar telefone com tamanho incorreto**
+   - Testar: `'123'`, `'123456789012'`
+   - Esperar: `false`
 
-6. **Testar computed properties**
-   - Acessar `wrapper.vm.propriedade`
-   - Verificar logica computada
+5. **Deve rejeitar string vazia**
+   - Testar: `''`
+   - Esperar: `false`
+
+### Estrutura:
+
+```javascript
+describe('validarTelefone', () => {
+  it('deve validar telefone fixo', () => {
+    // Seu código aqui
+  })
+  
+  // Implemente os outros testes...
+})
+```
+
+---
+
+## Passo 6: Executar os Testes
+
+Rode os testes com:
+
+```bash
+npm test validators.spec.js
+```
+
+**Resultado esperado**: Todos os testes devem passar ✅
+
+---
+
+## Passo 7: Verificar Cobertura
+
+Execute os testes com cobertura:
+
+```bash
+npm run test:coverage -- validators.spec.js
+```
+
+**Meta**:
+
+- ✅ 100% de cobertura nas funções validarEmail, validarCPF e validarTelefone
+- ⚠️ A classe FormValidator não precisa ter 100% (é mais complexa)
+
+---
+
+## Desafio Extra (Opcional)
+
+### 1. Adicionar mais validações
+
+Crie e teste novas funções de validação:
+
+```javascript
+// Em validators.js
+export function validarSenha(senha) {
+  // Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número
+}
+
+export function validarCEP(cep) {
+  // Formato: 12345-678 ou 12345678
+}
+```
+
+### 2. Testar mensagens de erro customizadas
+
+Modifique as funções para retornar objetos:
+
+```javascript
+// Retornar: { valido: boolean, mensagem: string }
+export function validarEmailComMensagem(email) {
+  if (!email) return { valido: false, mensagem: 'Email é obrigatório' }
+  // ...
+}
+```
+
+### 3. Testar casos extremos (Edge Cases)
+
+- Strings com caracteres especiais
+- Valores `null` e `undefined`
+- Números ao invés de strings
+- Objetos ou arrays
+
+---
+
+## Conceitos Importantes
+
+### 1. Arrange-Act-Assert (AAA)
+
+```javascript
+it('deve validar email', () => {
+  // Arrange (preparar)
+  const email = 'teste@exemplo.com'
+  
+  // Act (agir)
+  const resultado = validarEmail(email)
+  
+  // Assert (verificar)
+  expect(resultado).toBe(true)
+})
+```
+
+### 2. Testes múltiplos no mesmo `it`
+
+```javascript
+it('deve validar emails corretos', () => {
+  expect(validarEmail('teste@exemplo.com')).toBe(true)
+  expect(validarEmail('user@dominio.com.br')).toBe(true)
+  expect(validarEmail('email@sub.dominio.com')).toBe(true)
+})
+```
+
+### 3. Nomenclatura descritiva
+
+```javascript
+// ❌ Ruim
+it('test 1', () => {})
+
+// ✅ Bom
+it('deve validar email correto', () => {})
+it('deve rejeitar email sem @', () => {})
+```
+
+---
+
+## O que Você Vai Aprender
+
+1. ✅ Estruturar testes com `describe` e `it`
+2. ✅ Usar `expect()` e matchers (`.toBe()`, `.toEqual()`)
+3. ✅ Testar diferentes cenários (casos válidos e inválidos)
+4. ✅ Importar funções de módulos com `@/` alias
+5. ✅ Verificar cobertura de código
+6. ✅ Aplicar padrão AAA (Arrange-Act-Assert)
+
+---
+
+## Recursos de Ajuda
+
+**Documentação Vitest**:
+
+- [Matchers (expect)](https://vitest.dev/api/expect.html)
+- [describe e it](https://vitest.dev/api/#describe)
+
+**Referência Rápida de Matchers**:
+
+```javascript
+expect(valor).toBe(esperado)           // Igualdade estrita (===)
+expect(valor).toEqual(esperado)        // Igualdade de objetos/arrays
+expect(valor).toBeTruthy()             // Valor verdadeiro
+expect(valor).toBeFalsy()              // Valor falso
+expect(array).toHaveLength(3)          // Tamanho de array
+expect(string).toContain('texto')      // Substring
+expect(fn).toThrow()                   // Lança exceção
+```
+
+---
+
+## Entrega Esperada
+
+Ao final deste exercício, você deve ter:
+
+1. ✅ Arquivo `tests/unit/utils/validators.spec.js` criado
+2. ✅ Mínimo 12 testes implementados (4 por função)
+3. ✅ Todos os testes passando
+4. ✅ Alta cobertura (>80%) nas funções testadas
+
+**Tempo estimado**: 30-45 minutos
+
+---
+
+**Dica Final**: Rode `npm run test:ui` para ver os testes em uma interface gráfica interativa!

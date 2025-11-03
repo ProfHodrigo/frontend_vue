@@ -41,20 +41,6 @@
             />
           </div>
         </div>
-
-        <!-- Aba UserProfile -->
-        <div v-else-if="abaAtiva === 'profile'" class="tab-content">
-          <h2>Componente UserProfile</h2>
-          <p>Exemplo de componente integrado com Pinia store</p>
-          <UserProfile />
-        </div>
-
-        <!-- Aba ShoppingCart -->
-        <div v-else-if="abaAtiva === 'cart'" class="tab-content">
-          <h2>Componente ShoppingCart</h2>
-          <p>Exemplo de gerenciamento de estado com Pinia</p>
-          <ShoppingCart />
-        </div>
       </div>
     </div>
 
@@ -68,16 +54,12 @@
 import { ref } from 'vue'
 import Counter from './components/Counter.vue'
 import UserCard from './components/UserCard.vue'
-import UserProfile from './components/UserProfile.vue'
-import ShoppingCart from './components/ShoppingCart.vue'
 
 const abaAtiva = ref('counter')
 
 const tabs = [
   { id: 'counter', nome: 'Counter' },
-  { id: 'usercard', nome: 'UserCard' },
-  { id: 'profile', nome: 'Perfil' },
-  { id: 'cart', nome: 'Carrinho' }
+  { id: 'usercard', nome: 'UserCard' }
 ]
 
 const usuarios = ref([

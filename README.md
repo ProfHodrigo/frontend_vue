@@ -57,10 +57,10 @@ Nste curso de 12 aulas vamos aprender a usar o Vue.js de forma prática, constru
 - Store de usuário e produtos
 
 ### **Aula 9**: Componentes Avançados
-- Branch: `aula-09-componentes-avancados`
-- Slots, props avançadas
-- Eventos personalizados
-- Composição de componentes
+- Branch: `aula09-testes`
+- Vitest e Vue Test Utils
+- Testes unitários de componentes
+- Mockagem de APIs
 
 ### **Aula 10**: Estilização
 - Branch: `aula-10-estilizacao`

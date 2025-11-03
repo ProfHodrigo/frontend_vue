@@ -56,7 +56,7 @@ Nste curso de 12 aulas vamos aprender a usar o Vue.js de forma prática, constru
 - Pinia para gerenciamento de estado
 - Store de usuário e produtos
 
-### **Aula 9**: Componentes Avançados
+### **Aula 9**: Testes
 - Branch: `aula09-testes`
 - Vitest e Vue Test Utils
 - Testes unitários de componentes

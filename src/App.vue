@@ -223,6 +223,7 @@ export default {
 </script>
 
 <style lang="scss">
+@use 'sass:color';
 @import '@/styles/variables.scss';
 
 /* Reset e estilos globais */
@@ -424,7 +425,7 @@ body {
     transition: all 0.3s ease;
     
     &:hover {
-      color: darken($cor-primaria, 15%);
+      color: color.adjust($cor-primaria, $lightness: -15%);
       text-decoration: underline;
     }
   }

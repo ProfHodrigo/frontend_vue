@@ -93,7 +93,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@use 'sass:color';
 @import '@/styles/variables.scss';
 
 .botao-estilizado {
@@ -135,7 +134,7 @@ export default {
   color: white;
   
   &:hover {
-    background: color.adjust($cor-primaria, $lightness: -10%);
+    background: darken($cor-primaria, 10%);
   }
 }
 
@@ -144,7 +143,7 @@ export default {
   color: white;
   
   &:hover {
-    background: color.adjust($cor-sucesso, $lightness: -10%);
+    background: darken($cor-sucesso, 10%);
   }
 }
 
@@ -153,7 +152,7 @@ export default {
   color: white;
   
   &:hover {
-    background: color.adjust($cor-perigo, $lightness: -10%);
+    background: darken($cor-perigo, 10%);
   }
 }
 
@@ -162,7 +161,7 @@ export default {
   color: $cinza-900;
   
   &:hover {
-    background: color.adjust($cor-aviso, $lightness: -10%);
+    background: darken($cor-aviso, 10%);
   }
 }
 
@@ -171,7 +170,7 @@ export default {
   color: white;
   
   &:hover {
-    background: color.adjust($cor-info, $lightness: -10%);
+    background: darken($cor-info, 10%);
   }
 }
 

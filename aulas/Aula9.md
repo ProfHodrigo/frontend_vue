@@ -1,1278 +1,1072 @@
-## Aula 9 — Testes em Vue.js
+# Aula 9: Testes em Vue.js
 
-### Objetivos
-- Configurar ambiente de testes
-- Escrever testes unitários
-- Testar componentes Vue
-- Mockar dependências e APIs
-- Implementar testes end-to-end
-- Configurar coverage de código
-- Aplicar TDD com Vue
+## Introdução
+
+Nesta aula aprenderemos a escrever testes para aplicações Vue.js, garantindo qualidade e confiabilidade do código. Testes automatizados são essenciais em projetos profissionais.
+
+**Objetivo**: Configurar ambiente de testes com Vitest, escrever testes unitários para componentes e stores, e implementar testes end-to-end.
+
+**O que vamos ver nessa aula**:
+- Configurar Vitest e Vue Test Utils
+- Escrever testes unitários para componentes
 - Testar Pinia stores
+- Mockar APIs e dependências
+- Cobertura de código (coverage)
+- Introdução a testes E2E com Cypress
 
 ---
 
-### Configuração do Ambiente de Testes
+## Parte 1: Fundamentos de Testes
 
-#### Instalação das Dependências
+### Por que testar
+
+Testes automatizados trazem benefícios importantes:
+
+1. **Confiança no código**
+   - Garante que funcionalidades não quebram ao fazer mudanças
+   - Detecta bugs antes de ir para produção
+
+2. **Documentação viva**
+   - Testes mostram como o código deve ser usado
+   - Servem como exemplos práticos
+
+3. **Refatoração segura**
+   - Permite melhorar código sem medo de quebrar
+   - Testes falham se algo para de funcionar
+
+### Tipos de testes
+
+**Testes Unitários**:
+- Testam funções e componentes isolados
+- Rápidos de executar
+- Focam em lógica específica
+
+**Testes de Integração**:
+- Testam como partes diferentes trabalham juntas
+- Componente + Store, Componente + API
+- Mais próximos do uso real
+
+**Testes End-to-End (E2E)**:
+- Testam fluxo completo da aplicação
+- Simulam usuário real
+- Mais lentos, mas mais confiáveis
+
+### O que testar
+
+**Teste**:
+- Lógica de negócio (cálculos, validações)
+- Interações do usuário (clicks, inputs)
+- Mudanças de estado
+- Chamadas de API
+- Navegação entre rotas
+
+**Não teste**:
+- Detalhes de implementação interna
+- Bibliotecas de terceiros
+- Estilos CSS (use testes visuais)
+
+---
+
+## Parte 2: Configuração do Ambiente
+
+### Passo 1: Instalar Dependências
+
+Este projeto já está configurado com Vitest. Para novos projetos, instale:
 
 ```bash
-# Vue Test Utils + Jest
-npm install --save-dev @vue/test-utils jest
-npm install --save-dev jest-environment-jsdom
-npm install --save-dev @babel/preset-env
-
-# Para testes com Pinia
+npm install --save-dev vitest @vue/test-utils jsdom
+npm install --save-dev @vitest/ui @vitest/coverage-v8
 npm install --save-dev @pinia/testing
-
-# Para E2E testing
-npm install --save-dev cypress
 ```
 
-#### `jest.config.js`
+**O que cada pacote faz**:
+- `vitest`: Framework de testes moderno e rápido
+- `@vue/test-utils`: Ferramentas para testar componentes Vue
+- `jsdom`: Simula navegador para testes
+- `@vitest/ui`: Interface gráfica para testes
+- `@vitest/coverage-v8`: Relatórios de cobertura
+- `@pinia/testing`: Helpers para testar stores Pinia
+
+### Passo 2: Configurar Vitest
+
+O arquivo `vitest.config.js` já está configurado:
 
 ```javascript
-module.exports = {
-  testEnvironment: 'jsdom',
-  moduleFileExtensions: ['js', 'json', 'vue'],
-  transform: {
-    '^.+\\.vue$': '@vue/vue3-jest',
-    '^.+\\.js$': 'babel-jest'
-  },
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/src/$1'
-  },
-  testMatch: [
-    '<rootDir>/tests/unit/**/*.spec.js',
-    '<rootDir>/src/**/__tests__/*.js'
-  ],
-  collectCoverageFrom: [
-    'src/**/*.{js,vue}',
-    '!src/main.js',
-    '!src/router/index.js',
-    '!**/node_modules/**'
-  ],
-  coverageReporters: ['html', 'text', 'text-summary'],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.js']
-}
-```
+import { fileURLToPath } from 'node:url'
+import { mergeConfig, defineConfig, configDefaults } from 'vitest/config'
+import viteConfig from './vite.config'
 
-#### `tests/setup.js`
-
-```javascript
-import { config } from '@vue/test-utils'
-import { createTestingPinia } from '@pinia/testing'
-
-// Mock global components
-config.global.components = {
-  'router-link': {
-    template: '<a><slot /></a>',
-    props: ['to']
-  },
-  'router-view': {
-    template: '<div><slot /></div>'
-  }
-}
-
-// Global mocks
-global.console = {
-  ...global.console,
-  warn: jest.fn(),
-  error: jest.fn()
-}
-
-// Mock window methods
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  }))
-})
-
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn()
-}
-global.localStorage = localStorageMock
-```
-
----
-
-### Testes Unitários Básicos
-
-#### `tests/unit/utils/validators.spec.js`
-
-```javascript
-import { FormValidator, validators } from '@/utils/validators'
-
-describe('FormValidator', () => {
-  let validator
-
-  beforeEach(() => {
-    validator = new FormValidator()
-  })
-
-  describe('constructor', () => {
-    it('should initialize with empty rules and errors', () => {
-      expect(validator.rules).toEqual({})
-      expect(validator.errors).toEqual({})
-    })
-  })
-
-  describe('setRules', () => {
-    it('should set rules for a field', () => {
-      validator.setRules('email', ['required', 'email'])
-      expect(validator.rules.email).toEqual(['required', 'email'])
-    })
-
-    it('should return validator instance for chaining', () => {
-      const result = validator.setRules('email', ['required'])
-      expect(result).toBe(validator)
-    })
-  })
-
-  describe('validateField', () => {
-    beforeEach(() => {
-      validator.setRules('email', ['required', 'email'])
-    })
-
-    it('should validate required field successfully', () => {
-      const result = validator.validateField('email', 'test@example.com')
-      expect(result).toBe(true)
-      expect(validator.errors.email).toEqual([])
-    })
-
-    it('should fail validation for empty required field', () => {
-      const result = validator.validateField('email', '')
-      expect(result).toBe(false)
-      expect(validator.errors.email).toContain('email é obrigatório')
-    })
-
-    it('should fail validation for invalid email', () => {
-      const result = validator.validateField('email', 'invalid-email')
-      expect(result).toBe(false)
-      expect(validator.errors.email).toContain('Email inválido')
-    })
-
-    it('should return true if no rules exist for field', () => {
-      const result = validator.validateField('unknown', 'value')
-      expect(result).toBe(true)
-    })
-  })
-
-  describe('getFieldErrors', () => {
-    it('should return errors for a field', () => {
-      validator.setRules('email', ['required'])
-      validator.validateField('email', '')
-      
-      const errors = validator.getFieldErrors('email')
-      expect(errors).toContain('email é obrigatório')
-    })
-
-    it('should return empty array for field with no errors', () => {
-      const errors = validator.getFieldErrors('nonexistent')
-      expect(errors).toEqual([])
-    })
-  })
-})
-
-describe('validators', () => {
-  describe('cpf', () => {
-    it('should validate correct CPF', () => {
-      expect(validators.cpf('11144477735')).toBe(true)
-    })
-
-    it('should reject invalid CPF', () => {
-      expect(validators.cpf('12345678901')).toBe(false)
-    })
-
-    it('should handle CPF with formatting', () => {
-      expect(validators.cpf('111.444.777-35')).toBe(true)
-    })
-
-    it('should return true for empty value', () => {
-      expect(validators.cpf('')).toBe(true)
-    })
-  })
-
-  describe('phone', () => {
-    it('should validate 10-digit phone', () => {
-      expect(validators.phone('1234567890')).toBe(true)
-    })
-
-    it('should validate 11-digit phone', () => {
-      expect(validators.phone('12345678901')).toBe(true)
-    })
-
-    it('should reject invalid phone', () => {
-      expect(validators.phone('123')).toBe(false)
-    })
-
-    it('should handle phone with formatting', () => {
-      expect(validators.phone('(12) 34567-8901')).toBe(true)
-    })
-  })
-
-  describe('strongPassword', () => {
-    it('should validate strong password', () => {
-      expect(validators.strongPassword('Test123@')).toBe(true)
-    })
-
-    it('should reject weak password', () => {
-      expect(validators.strongPassword('password')).toBe(false)
-    })
-
-    it('should require uppercase', () => {
-      expect(validators.strongPassword('test123@')).toBe(false)
-    })
-
-    it('should require lowercase', () => {
-      expect(validators.strongPassword('TEST123@')).toBe(false)
-    })
-
-    it('should require number', () => {
-      expect(validators.strongPassword('TestAbc@')).toBe(false)
-    })
-
-    it('should require special character', () => {
-      expect(validators.strongPassword('Test1234')).toBe(false)
-    })
-
-    it('should require minimum length', () => {
-      expect(validators.strongPassword('Te1@')).toBe(false)
-    })
-  })
-})
-```
-
----
-
-### Testes de Componentes
-
-#### `tests/unit/components/ProductCard.spec.js`
-
-```javascript
-import { mount } from '@vue/test-utils'
-import { createTestingPinia } from '@pinia/testing'
-import ProductCard from '@/components/ProductCard.vue'
-
-// Mock product data
-const mockProduct = {
-  id: 1,
-  name: 'Test Product',
-  price: 29.99,
-  description: 'Test description',
-  image: '/test-image.jpg',
-  stock: 5,
-  category: 'electronics'
-}
-
-describe('ProductCard.vue', () => {
-  let wrapper
-
-  const createWrapper = (props = {}, options = {}) => {
-    return mount(ProductCard, {
-      props: {
-        product: mockProduct,
-        ...props
-      },
-      global: {
-        plugins: [createTestingPinia({
-          createSpy: jest.fn
-        })],
-        stubs: {
-          'router-link': true
-        }
-      },
-      ...options
-    })
-  }
-
-  afterEach(() => {
-    if (wrapper) {
-      wrapper.unmount()
+export default mergeConfig(
+  viteConfig,
+  defineConfig({
+    test: {
+      environment: 'jsdom',
+      exclude: [...configDefaults.exclude, 'e2e/*'],
+      root: fileURLToPath(new URL('./', import.meta.url)),
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'html'],
+        exclude: [
+          'node_modules/',
+          'tests/',
+          '**/*.spec.js',
+          '**/*.test.js',
+          '**/main.js',
+          'vite.config.js',
+          'vitest.config.js'
+        ]
+      }
     }
   })
-
-  describe('rendering', () => {
-    beforeEach(() => {
-      wrapper = createWrapper()
-    })
-
-    it('should render product information', () => {
-      expect(wrapper.find('h3').text()).toBe(mockProduct.name)
-      expect(wrapper.find('.price').text()).toContain(mockProduct.price.toString())
-      expect(wrapper.find('img').attributes('src')).toBe(mockProduct.image)
-      expect(wrapper.find('img').attributes('alt')).toBe(mockProduct.name)
-    })
-
-    it('should show stock status when in stock', () => {
-      expect(wrapper.find('.stock-status').text()).toContain('Em estoque')
-    })
-
-    it('should show out of stock when stock is 0', () => {
-      wrapper = createWrapper({ 
-        product: { ...mockProduct, stock: 0 }
-      })
-      expect(wrapper.find('.stock-status').text()).toContain('Sem estoque')
-    })
-  })
-
-  describe('interactions', () => {
-    let productsStore
-
-    beforeEach(() => {
-      wrapper = createWrapper()
-      productsStore = wrapper.vm.$pinia._stores.get('products')
-    })
-
-    it('should add product to cart when button is clicked', async () => {
-      const addButton = wrapper.find('[data-testid="add-to-cart"]')
-      await addButton.trigger('click')
-
-      expect(productsStore.addToCart).toHaveBeenCalledWith(mockProduct, 1)
-    })
-
-    it('should disable add to cart button when out of stock', () => {
-      wrapper = createWrapper({ 
-        product: { ...mockProduct, stock: 0 }
-      })
-      
-      const addButton = wrapper.find('[data-testid="add-to-cart"]')
-      expect(addButton.element.disabled).toBe(true)
-    })
-
-    it('should toggle favorite when favorite button is clicked', async () => {
-      const favoriteButton = wrapper.find('[data-testid="favorite-button"]')
-      await favoriteButton.trigger('click')
-
-      expect(productsStore.toggleFavorite).toHaveBeenCalledWith(mockProduct.id)
-    })
-
-    it('should emit product-selected when clicked', async () => {
-      await wrapper.find('.product-card').trigger('click')
-      
-      expect(wrapper.emitted('product-selected')).toHaveLength(1)
-      expect(wrapper.emitted('product-selected')[0]).toEqual([mockProduct])
-    })
-  })
-
-  describe('computed properties', () => {
-    beforeEach(() => {
-      wrapper = createWrapper()
-    })
-
-    it('should compute formatted price', () => {
-      expect(wrapper.vm.formattedPrice).toBe('$29.99')
-    })
-
-    it('should compute is in stock', () => {
-      expect(wrapper.vm.isInStock).toBe(true)
-      
-      wrapper = createWrapper({ 
-        product: { ...mockProduct, stock: 0 }
-      })
-      expect(wrapper.vm.isInStock).toBe(false)
-    })
-
-    it('should compute is favorite', () => {
-      const productsStore = wrapper.vm.$pinia._stores.get('products')
-      productsStore.favorites = [mockProduct.id]
-      
-      expect(wrapper.vm.isFavorite).toBe(true)
-    })
-  })
-
-  describe('edge cases', () => {
-    it('should handle missing product gracefully', () => {
-      wrapper = createWrapper({ product: null })
-      expect(wrapper.find('.product-card').exists()).toBe(false)
-    })
-
-    it('should handle missing image', () => {
-      wrapper = createWrapper({
-        product: { ...mockProduct, image: null }
-      })
-      
-      const img = wrapper.find('img')
-      expect(img.attributes('src')).toBe('/placeholder-image.jpg')
-    })
-
-    it('should handle very long product names', () => {
-      const longName = 'A'.repeat(100)
-      wrapper = createWrapper({
-        product: { ...mockProduct, name: longName }
-      })
-      
-      const title = wrapper.find('h3')
-      expect(title.classes()).toContain('truncate')
-    })
-  })
-})
+)
 ```
 
----
+**Configurações explicadas**:
 
-### Testes de Formulários
+1. **`environment: 'jsdom'`**
+   - Simula DOM do navegador
 
-#### `tests/unit/components/FormularioCompleto.spec.js`
+2. **`exclude`**
+   - Arquivos/pastas a ignorar nos testes
 
-```javascript
-import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
-import FormularioCompleto from '@/components/FormularioCompleto.vue'
+3. **`coverage`**
+   - Configuração de relatórios de cobertura
+   - Exclui arquivos de configuração e os próprios testes
 
-describe('FormularioCompleto.vue', () => {
-  let wrapper
+### Passo 3: Scripts no package.json
 
-  const createWrapper = (options = {}) => {
-    return mount(FormularioCompleto, {
-      global: {
-        stubs: {
-          'font-awesome-icon': true
-        }
-      },
-      ...options
-    })
-  }
-
-  beforeEach(() => {
-    // Mock console methods
-    jest.spyOn(console, 'error').mockImplementation(() => {})
-    jest.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    if (wrapper) {
-      wrapper.unmount()
-    }
-    jest.restoreAllMocks()
-  })
-
-  describe('form rendering', () => {
-    beforeEach(() => {
-      wrapper = createWrapper()
-    })
-
-    it('should render all form sections', () => {
-      expect(wrapper.find('[data-testid="personal-data"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="address-data"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="preferences"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="security"]').exists()).toBe(true)
-    })
-
-    it('should show progress bar', () => {
-      const progressBar = wrapper.find('.progress-bar')
-      expect(progressBar.exists()).toBe(true)
-      expect(progressBar.text()).toContain('% completo')
-    })
-
-    it('should show form status', () => {
-      const status = wrapper.find('.form-status')
-      expect(status.exists()).toBe(true)
-    })
-  })
-
-  describe('form validation', () => {
-    beforeEach(() => {
-      wrapper = createWrapper()
-    })
-
-    it('should validate required fields', async () => {
-      const nameInput = wrapper.find('[data-testid="name-input"]')
-      
-      // Test empty field
-      await nameInput.setValue('')
-      await nameInput.trigger('blur')
-      
-      expect(wrapper.find('.invalid-feedback').text()).toContain('obrigatório')
-      expect(nameInput.classes()).toContain('is-invalid')
-    })
-
-    it('should validate email format', async () => {
-      const emailInput = wrapper.find('[data-testid="email-input"]')
-      
-      // Test invalid email
-      await emailInput.setValue('invalid-email')
-      await emailInput.trigger('blur')
-      
-      expect(wrapper.find('.invalid-feedback').text()).toContain('Email inválido')
-    })
-
-    it('should validate password strength', async () => {
-      const passwordInput = wrapper.find('[data-testid="password-input"]')
-      
-      // Test weak password
-      await passwordInput.setValue('123')
-      
-      await nextTick()
-      expect(wrapper.find('.password-strength .progress-bar').classes()).toContain('bg-danger')
-      expect(wrapper.find('.password-strength small').text()).toContain('Fraca')
-    })
-
-    it('should validate password confirmation', async () => {
-      const passwordInput = wrapper.find('[data-testid="password-input"]')
-      const confirmInput = wrapper.find('[data-testid="confirm-password-input"]')
-      
-      await passwordInput.setValue('Test123@')
-      await confirmInput.setValue('Different123@')
-      await confirmInput.trigger('blur')
-      
-      expect(wrapper.find('.invalid-feedback').text()).toContain('Senhas não coincidem')
-    })
-
-    it('should validate CPF', async () => {
-      const cpfInput = wrapper.find('[data-testid="cpf-input"]')
-      
-      await cpfInput.setValue('123.456.789-00')
-      await cpfInput.trigger('blur')
-      
-      expect(wrapper.find('.invalid-feedback').text()).toContain('CPF inválido')
-    })
-  })
-
-  describe('form interactions', () => {
-    beforeEach(() => {
-      wrapper = createWrapper()
-    })
-
-    it('should clear field errors on input', async () => {
-      const nameInput = wrapper.find('[data-testid="name-input"]')
-      
-      // First trigger error
-      await nameInput.trigger('blur')
-      expect(nameInput.classes()).toContain('is-invalid')
-      
-      // Then clear by typing
-      await nameInput.setValue('John Doe')
-      expect(nameInput.classes()).not.toContain('is-invalid')
-    })
-
-    it('should update progress bar as fields are filled', async () => {
-      const progressBar = wrapper.find('.progress-bar')
-      const initialWidth = progressBar.element.style.width
-      
-      // Fill required fields
-      await wrapper.find('[data-testid="name-input"]').setValue('John Doe')
-      await wrapper.find('[data-testid="email-input"]').setValue('john@example.com')
-      
-      await nextTick()
-      const newWidth = progressBar.element.style.width
-      expect(parseFloat(newWidth)).toBeGreaterThan(parseFloat(initialWidth))
-    })
-
-    it('should toggle password visibility', async () => {
-      const passwordInput = wrapper.find('[data-testid="password-input"]')
-      const toggleButton = wrapper.find('[data-testid="password-toggle"]')
-      
-      expect(passwordInput.attributes('type')).toBe('password')
-      
-      await toggleButton.trigger('click')
-      expect(passwordInput.attributes('type')).toBe('text')
-    })
-
-    it('should reset form when reset button is clicked', async () => {
-      // Fill some data
-      await wrapper.find('[data-testid="name-input"]').setValue('John Doe')
-      await wrapper.find('[data-testid="email-input"]').setValue('john@example.com')
-      
-      // Mock confirm dialog
-      global.confirm = jest.fn().mockReturnValue(true)
-      
-      await wrapper.find('[data-testid="reset-button"]').trigger('click')
-      
-      expect(wrapper.vm.form.nome).toBe('')
-      expect(wrapper.vm.form.email).toBe('')
-    })
-  })
-
-  describe('file upload', () => {
-    beforeEach(() => {
-      wrapper = createWrapper()
-    })
-
-    it('should handle file selection', async () => {
-      const fileInput = wrapper.find('[data-testid="file-input"]')
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
-      
-      // Mock FileReader
-      const mockFileReader = {
-        readAsDataURL: jest.fn(),
-        result: 'data:image/jpeg;base64,test',
-        onload: null
-      }
-      
-      global.FileReader = jest.fn(() => mockFileReader)
-      
-      Object.defineProperty(fileInput.element, 'files', {
-        value: [file],
-        writable: false
-      })
-      
-      await fileInput.trigger('change')
-      
-      // Simulate FileReader onload
-      mockFileReader.onload({ target: { result: 'data:image/jpeg;base64,test' } })
-      
-      await nextTick()
-      expect(wrapper.vm.form.foto).toBeTruthy()
-      expect(wrapper.vm.form.foto.name).toBe('test.jpg')
-    })
-
-    it('should reject large files', async () => {
-      const fileInput = wrapper.find('[data-testid="file-input"]')
-      const largeFile = new File(['x'.repeat(6 * 1024 * 1024)], 'large.jpg', { 
-        type: 'image/jpeg' 
-      })
-      
-      global.alert = jest.fn()
-      
-      Object.defineProperty(fileInput.element, 'files', {
-        value: [largeFile],
-        writable: false
-      })
-      
-      await fileInput.trigger('change')
-      
-      expect(global.alert).toHaveBeenCalledWith('Arquivo muito grande. Máximo 5MB.')
-      expect(wrapper.vm.form.foto).toBeNull()
-    })
-  })
-
-  describe('form submission', () => {
-    beforeEach(() => {
-      wrapper = createWrapper()
-    })
-
-    it('should prevent submission with invalid form', async () => {
-      const form = wrapper.find('form')
-      const submitSpy = jest.spyOn(wrapper.vm, 'handleSubmit')
-      
-      await form.trigger('submit')
-      
-      expect(submitSpy).toHaveBeenCalled()
-      expect(wrapper.vm.submitting).toBe(false)
-    })
-
-    it('should submit valid form', async () => {
-      // Fill all required fields
-      await wrapper.find('[data-testid="name-input"]').setValue('John Doe')
-      await wrapper.find('[data-testid="email-input"]').setValue('john@example.com')
-      await wrapper.find('[data-testid="cpf-input"]').setValue('111.444.777-35')
-      await wrapper.find('[data-testid="phone-input"]').setValue('(11) 99999-9999')
-      await wrapper.find('[data-testid="cep-input"]').setValue('12345-678')
-      await wrapper.find('[data-testid="address-input"]').setValue('Rua Teste')
-      await wrapper.find('[data-testid="password-input"]').setValue('Test123@')
-      await wrapper.find('[data-testid="confirm-password-input"]').setValue('Test123@')
-      await wrapper.find('[data-testid="terms-checkbox"]').setChecked()
-      
-      // Trigger validation
-      await wrapper.vm.validator.validate(wrapper.vm.form)
-      wrapper.vm.validatedFields.add('nome')
-      wrapper.vm.validatedFields.add('email')
-      wrapper.vm.validatedFields.add('cpf')
-      wrapper.vm.validatedFields.add('telefone')
-      wrapper.vm.validatedFields.add('cep')
-      wrapper.vm.validatedFields.add('logradouro')
-      wrapper.vm.validatedFields.add('senha')
-      wrapper.vm.validatedFields.add('confirmarSenha')
-      wrapper.vm.validatedFields.add('aceitarTermos')
-      
-      global.alert = jest.fn()
-      
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      
-      // Wait for async submission
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      expect(global.alert).toHaveBeenCalledWith('Formulário enviado com sucesso!')
-    })
-  })
-
-  describe('accessibility', () => {
-    beforeEach(() => {
-      wrapper = createWrapper()
-    })
-
-    it('should have proper aria labels', () => {
-      const nameInput = wrapper.find('[data-testid="name-input"]')
-      const nameLabel = wrapper.find('label[for="name"]')
-      
-      expect(nameLabel.exists()).toBe(true)
-      expect(nameLabel.text()).toContain('Nome Completo')
-    })
-
-    it('should have proper error associations', async () => {
-      const emailInput = wrapper.find('[data-testid="email-input"]')
-      
-      await emailInput.setValue('invalid')
-      await emailInput.trigger('blur')
-      
-      const errorElement = wrapper.find('.invalid-feedback')
-      expect(errorElement.exists()).toBe(true)
-    })
-
-    it('should be keyboard navigable', async () => {
-      const firstInput = wrapper.find('[data-testid="name-input"]')
-      const secondInput = wrapper.find('[data-testid="email-input"]')
-      
-      await firstInput.trigger('keydown.tab')
-      expect(document.activeElement).not.toBe(firstInput.element)
-    })
-  })
-})
-```
-
----
-
-### Testes de Pinia Stores
-
-#### `tests/unit/stores/user.spec.js`
-
-```javascript
-import { setActivePinia, createPinia } from 'pinia'
-import { useUserStore } from '@/stores/user'
-import api from '@/services/api'
-
-// Mock API
-jest.mock('@/services/api')
-
-describe('User Store', () => {
-  let store
-
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    store = useUserStore()
-    
-    // Clear localStorage mock
-    localStorage.clear()
-    
-    // Reset API mocks
-    jest.clearAllMocks()
-  })
-
-  describe('initial state', () => {
-    it('should have correct initial state', () => {
-      expect(store.user).toBe(null)
-      expect(store.isAuthenticated).toBe(false)
-      expect(store.loading).toBe(false)
-      expect(store.permissions).toEqual([])
-      expect(store.loginAttempts).toBe(0)
-    })
-  })
-
-  describe('getters', () => {
-    it('should compute fullName correctly', () => {
-      store.user = { firstName: 'John', lastName: 'Doe' }
-      expect(store.fullName).toBe('John Doe')
-    })
-
-    it('should return empty string for fullName when no user', () => {
-      expect(store.fullName).toBe('')
-    })
-
-    it('should check permissions correctly', () => {
-      store.permissions = ['admin', 'user-read']
-      expect(store.hasPermission('admin')).toBe(true)
-      expect(store.hasPermission('super-admin')).toBe(false)
-    })
-
-    it('should compute userStats correctly', () => {
-      store.user = {
-        totalLogins: 10,
-        createdAt: '2023-01-01T00:00:00Z'
-      }
-      store.lastLogin = '2023-12-01T00:00:00Z'
-      
-      const stats = store.userStats
-      expect(stats.totalLogins).toBe(10)
-      expect(stats.daysActive).toBeGreaterThan(0)
-      expect(stats.lastLoginFormatted).toBeTruthy()
-    })
-
-    it('should return null for userStats when no user', () => {
-      expect(store.userStats).toBe(null)
-    })
-  })
-
-  describe('actions', () => {
-    describe('updatePreferences', () => {
-      it('should update preferences', () => {
-        const newPrefs = { theme: 'dark' }
-        store.updatePreferences(newPrefs)
-        
-        expect(store.preferences.theme).toBe('dark')
-        expect(store.preferences.language).toBe('pt-BR') // should keep existing
-      })
-    })
-
-    describe('login', () => {
-      const mockUser = { id: 1, firstName: 'John', lastName: 'Doe' }
-      const mockResponse = {
-        data: {
-          user: mockUser,
-          permissions: ['user'],
-          token: 'mock-token'
-        }
-      }
-
-      it('should login successfully', async () => {
-        api.post.mockResolvedValueOnce(mockResponse)
-        
-        const result = await store.login({ email: 'john@example.com', password: 'password' })
-        
-        expect(api.post).toHaveBeenCalledWith('/auth/login', {
-          email: 'john@example.com',
-          password: 'password'
-        })
-        expect(store.user).toEqual(mockUser)
-        expect(store.isAuthenticated).toBe(true)
-        expect(store.permissions).toEqual(['user'])
-        expect(store.loginAttempts).toBe(0)
-        expect(localStorage.setItem).toHaveBeenCalledWith('authToken', 'mock-token')
-        expect(result.success).toBe(true)
-      })
-
-      it('should handle 401 error', async () => {
-        api.post.mockRejectedValueOnce({
-          response: { status: 401 }
-        })
-        
-        await expect(store.login({ email: 'wrong@example.com', password: 'wrong' }))
-          .rejects.toThrow('Credenciais inválidas')
-        
-        expect(store.isAuthenticated).toBe(false)
-        expect(store.loginAttempts).toBe(1)
-      })
-
-      it('should handle 429 error', async () => {
-        api.post.mockRejectedValueOnce({
-          response: { status: 429 }
-        })
-        
-        await expect(store.login({ email: 'test@example.com', password: 'password' }))
-          .rejects.toThrow('Muitas tentativas')
-      })
-
-      it('should handle network error', async () => {
-        api.post.mockRejectedValueOnce(new Error('Network Error'))
-        
-        await expect(store.login({ email: 'test@example.com', password: 'password' }))
-          .rejects.toThrow('Erro interno')
-      })
-
-      it('should set loading state correctly', async () => {
-        let resolvePromise
-        const promise = new Promise(resolve => {
-          resolvePromise = resolve
-        })
-        
-        api.post.mockReturnValueOnce(promise)
-        
-        const loginPromise = store.login({ email: 'test@example.com', password: 'password' })
-        
-        expect(store.loading).toBe(true)
-        
-        resolvePromise(mockResponse)
-        await loginPromise
-        
-        expect(store.loading).toBe(false)
-      })
-    })
-
-    describe('logout', () => {
-      beforeEach(() => {
-        // Set initial logged in state
-        store.user = { id: 1, name: 'John' }
-        store.isAuthenticated = true
-        store.permissions = ['user']
-        localStorage.setItem('authToken', 'test-token')
-      })
-
-      it('should logout successfully', async () => {
-        api.post.mockResolvedValueOnce({})
-        
-        await store.logout()
-        
-        expect(api.post).toHaveBeenCalledWith('/auth/logout')
-        expect(store.user).toBe(null)
-        expect(store.isAuthenticated).toBe(false)
-        expect(store.permissions).toEqual([])
-        expect(localStorage.removeItem).toHaveBeenCalledWith('authToken')
-      })
-
-      it('should logout even if API call fails', async () => {
-        api.post.mockRejectedValueOnce(new Error('API Error'))
-        
-        await store.logout()
-        
-        expect(store.user).toBe(null)
-        expect(store.isAuthenticated).toBe(false)
-      })
-    })
-
-    describe('refreshAuth', () => {
-      it('should refresh authentication successfully', async () => {
-        const mockResponse = {
-          data: {
-            user: { id: 1, name: 'John' },
-            permissions: ['user'],
-            token: 'new-token'
-          }
-        }
-        
-        localStorage.setItem('authToken', 'old-token')
-        api.post.mockResolvedValueOnce(mockResponse)
-        
-        const result = await store.refreshAuth()
-        
-        expect(result).toBe(true)
-        expect(store.isAuthenticated).toBe(true)
-        expect(localStorage.setItem).toHaveBeenCalledWith('authToken', 'new-token')
-      })
-
-      it('should return false if no token exists', async () => {
-        const result = await store.refreshAuth()
-        expect(result).toBe(false)
-      })
-
-      it('should logout if refresh fails', async () => {
-        localStorage.setItem('authToken', 'invalid-token')
-        api.post.mockRejectedValueOnce(new Error('Invalid token'))
-        
-        const logoutSpy = jest.spyOn(store, 'logout')
-        
-        const result = await store.refreshAuth()
-        
-        expect(result).toBe(false)
-        expect(logoutSpy).toHaveBeenCalled()
-      })
-    })
-
-    describe('updateProfile', () => {
-      beforeEach(() => {
-        store.user = { id: 1, name: 'John', email: 'john@example.com' }
-      })
-
-      it('should update profile successfully', async () => {
-        const updatedData = { name: 'John Updated' }
-        const mockResponse = { data: updatedData }
-        
-        api.put.mockResolvedValueOnce(mockResponse)
-        
-        const result = await store.updateProfile(updatedData)
-        
-        expect(api.put).toHaveBeenCalledWith('/user/profile', updatedData)
-        expect(store.user.name).toBe('John Updated')
-        expect(result.success).toBe(true)
-      })
-
-      it('should handle update errors', async () => {
-        api.put.mockRejectedValueOnce({
-          response: { data: { message: 'Update failed' } }
-        })
-        
-        await expect(store.updateProfile({ name: 'Test' }))
-          .rejects.toThrow('Update failed')
-      })
-    })
-  })
-})
-```
-
----
-
-### Testes End-to-End com Cypress
-
-#### `cypress/e2e/auth.cy.js`
-
-```javascript
-describe('Authentication Flow', () => {
-  beforeEach(() => {
-    // Reset database or use fixtures
-    cy.exec('npm run db:reset')
-    
-    // Visit login page
-    cy.visit('/login')
-  })
-
-  describe('Login', () => {
-    it('should login with valid credentials', () => {
-      cy.get('[data-cy="email-input"]').type('user@example.com')
-      cy.get('[data-cy="password-input"]').type('password123')
-      cy.get('[data-cy="login-button"]').click()
-      
-      // Should redirect to dashboard
-      cy.url().should('include', '/dashboard')
-      cy.get('[data-cy="user-menu"]').should('contain', 'User Name')
-    })
-
-    it('should show error with invalid credentials', () => {
-      cy.get('[data-cy="email-input"]').type('wrong@example.com')
-      cy.get('[data-cy="password-input"]').type('wrongpassword')
-      cy.get('[data-cy="login-button"]').click()
-      
-      cy.get('[data-cy="error-message"]')
-        .should('be.visible')
-        .and('contain', 'Credenciais inválidas')
-    })
-
-    it('should show validation errors for empty fields', () => {
-      cy.get('[data-cy="login-button"]').click()
-      
-      cy.get('[data-cy="email-error"]').should('contain', 'Email é obrigatório')
-      cy.get('[data-cy="password-error"]').should('contain', 'Senha é obrigatória')
-    })
-
-    it('should persist login after page refresh', () => {
-      // Login first
-      cy.get('[data-cy="email-input"]').type('user@example.com')
-      cy.get('[data-cy="password-input"]').type('password123')
-      cy.get('[data-cy="login-button"]').click()
-      
-      // Verify login
-      cy.url().should('include', '/dashboard')
-      
-      // Refresh page
-      cy.reload()
-      
-      // Should still be logged in
-      cy.url().should('include', '/dashboard')
-      cy.get('[data-cy="user-menu"]').should('exist')
-    })
-  })
-
-  describe('Logout', () => {
-    beforeEach(() => {
-      // Login first
-      cy.get('[data-cy="email-input"]').type('user@example.com')
-      cy.get('[data-cy="password-input"]').type('password123')
-      cy.get('[data-cy="login-button"]').click()
-    })
-
-    it('should logout user', () => {
-      cy.get('[data-cy="user-menu"]').click()
-      cy.get('[data-cy="logout-button"]').click()
-      
-      // Should redirect to login
-      cy.url().should('include', '/login')
-      cy.get('[data-cy="login-form"]').should('be.visible')
-    })
-  })
-
-  describe('Protected Routes', () => {
-    it('should redirect to login when accessing protected route', () => {
-      cy.visit('/dashboard')
-      cy.url().should('include', '/login')
-    })
-
-    it('should allow access to protected route after login', () => {
-      cy.get('[data-cy="email-input"]').type('user@example.com')
-      cy.get('[data-cy="password-input"]').type('password123')
-      cy.get('[data-cy="login-button"]').click()
-      
-      cy.visit('/profile')
-      cy.url().should('include', '/profile')
-      cy.get('[data-cy="profile-form"]').should('be.visible')
-    })
-  })
-})
-```
-
-#### `cypress/e2e/product-management.cy.js`
-
-```javascript
-describe('Product Management', () => {
-  beforeEach(() => {
-    // Setup test data
-    cy.exec('npm run db:seed')
-    
-    // Login as admin
-    cy.login('admin@example.com', 'admin123')
-    
-    cy.visit('/products')
-  })
-
-  describe('Product List', () => {
-    it('should display products', () => {
-      cy.get('[data-cy="product-card"]').should('have.length.greaterThan', 0)
-      cy.get('[data-cy="product-name"]').first().should('be.visible')
-      cy.get('[data-cy="product-price"]').first().should('be.visible')
-    })
-
-    it('should filter products by category', () => {
-      cy.get('[data-cy="category-filter"]').select('Electronics')
-      cy.get('[data-cy="apply-filters"]').click()
-      
-      cy.get('[data-cy="product-card"]').each($card => {
-        cy.wrap($card).should('contain', 'Electronics')
-      })
-    })
-
-    it('should search products', () => {
-      const searchTerm = 'iPhone'
-      cy.get('[data-cy="search-input"]').type(searchTerm)
-      cy.get('[data-cy="search-button"]').click()
-      
-      cy.get('[data-cy="product-name"]').each($name => {
-        cy.wrap($name).should('contain.text', searchTerm, { matchCase: false })
-      })
-    })
-
-    it('should sort products by price', () => {
-      cy.get('[data-cy="sort-select"]').select('price-asc')
-      
-      let prices = []
-      cy.get('[data-cy="product-price"]')
-        .each($price => {
-          const price = parseFloat($price.text().replace('$', ''))
-          prices.push(price)
-        })
-        .then(() => {
-          const sortedPrices = [...prices].sort((a, b) => a - b)
-          expect(prices).to.deep.equal(sortedPrices)
-        })
-    })
-  })
-
-  describe('Add to Cart', () => {
-    it('should add product to cart', () => {
-      cy.get('[data-cy="add-to-cart-button"]').first().click()
-      
-      cy.get('[data-cy="cart-icon"]').should('contain', '1')
-      cy.get('[data-cy="notification"]').should('contain', 'adicionado ao carrinho')
-    })
-
-    it('should update cart count when adding multiple items', () => {
-      cy.get('[data-cy="add-to-cart-button"]').first().click()
-      cy.get('[data-cy="add-to-cart-button"]').eq(1).click()
-      
-      cy.get('[data-cy="cart-icon"]').should('contain', '2')
-    })
-
-    it('should prevent adding out of stock items', () => {
-      cy.get('[data-cy="product-card"]')
-        .contains('Out of Stock')
-        .parent()
-        .find('[data-cy="add-to-cart-button"]')
-        .should('be.disabled')
-    })
-  })
-
-  describe('Product Details', () => {
-    it('should show product details on click', () => {
-      cy.get('[data-cy="product-card"]').first().click()
-      
-      cy.get('[data-cy="product-modal"]').should('be.visible')
-      cy.get('[data-cy="product-description"]').should('be.visible')
-      cy.get('[data-cy="product-specifications"]').should('be.visible')
-    })
-
-    it('should allow quantity selection in product details', () => {
-      cy.get('[data-cy="product-card"]').first().click()
-      
-      cy.get('[data-cy="quantity-input"]').clear().type('3')
-      cy.get('[data-cy="add-to-cart-button"]').click()
-      
-      cy.get('[data-cy="cart-icon"]').should('contain', '3')
-    })
-  })
-
-  describe('Favorites', () => {
-    it('should add product to favorites', () => {
-      cy.get('[data-cy="favorite-button"]').first().click()
-      
-      cy.get('[data-cy="favorite-button"]').first().should('have.class', 'active')
-      cy.get('[data-cy="notification"]').should('contain', 'favoritos')
-    })
-
-    it('should remove product from favorites', () => {
-      // Add to favorites first
-      cy.get('[data-cy="favorite-button"]').first().click()
-      
-      // Remove from favorites
-      cy.get('[data-cy="favorite-button"]').first().click()
-      
-      cy.get('[data-cy="favorite-button"]').first().should('not.have.class', 'active')
-    })
-
-    it('should show favorites in profile', () => {
-      cy.get('[data-cy="favorite-button"]').first().click()
-      
-      cy.visit('/profile/favorites')
-      cy.get('[data-cy="favorite-product"]').should('have.length', 1)
-    })
-  })
-})
-```
-
----
-
-### Comandos de Teste no package.json
+O `package.json` já possui os scripts:
 
 ```json
 {
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:e2e": "cypress run",
-    "test:e2e:open": "cypress open"
+    "test": "vitest",
+    "test:unit": "vitest",
+    "test:coverage": "vitest --coverage",
+    "test:ui": "vitest --ui"
   }
 }
 ```
 
----
+**Como usar**:
+- `npm test`: Roda testes em modo watch (observa mudanças)
+- `npm run test:unit`: Executa todos os testes
+- `npm run test:coverage`: Gera relatório de cobertura
+- `npm run test:ui`: Abre interface gráfica do Vitest
 
-### Exercícios Práticos
+### Passo 4: Estrutura de Pastas
 
-#### Exercício 1: Testar Store Complexa
-Criar testes para a store de produtos:
-- Testar todos os getters
-- Testar ações assíncronas
-- Mockar API calls
-- Testar error handling
+Este projeto usa a estrutura:
 
-#### Exercício 2: Testes de Integração
-Criar testes que verificam:
-- Interação entre componentes
-- Fluxo completo de dados
-- Store + Component integration
-- Router navigation
-
-#### Exercício 3: E2E Completo
-Implementar testes E2E para:
-- Fluxo completo de compra
-- Gerenciamento de perfil
-- Funcionalidades admin
-- Responsividade
-
----
-
-### Comandos Git
-
-```bash
-git add .
-git commit -m "Aula 9 - Testes em Vue.js"
+```
+tests/
+├── unit/
+│   ├── components/
+│   │   ├── Counter.spec.js
+│   │   └── UserCard.spec.js
+│   └── utils/
+│       └── validators.spec.js
 ```
 
 ---
 
-### Próxima Aula
+## Parte 3: Testando Funções Utilitárias
 
-Na **Aula 10** veremos:
-- Performance e otimização
-- Lazy loading de componentes
-- Code splitting
-- Bundle optimization
+### Exemplo: Validators
+
+O arquivo `src/utils/validators.js` possui funções de validação:
+
+```javascript
+export function validarEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email)
+}
+
+export function validarCPF(cpf) {
+  const cleanCPF = cpf.replace(/[^\d]/g, '')
+  
+  if (cleanCPF.length !== 11) return false
+  if (/^(\d)\1{10}$/.test(cleanCPF)) return false
+  
+  // Calcula dígito verificador
+  let soma = 0
+  for (let i = 0; i < 9; i++) {
+    soma += parseInt(cleanCPF.charAt(i)) * (10 - i)
+  }
+  let digito1 = 11 - (soma % 11)
+  if (digito1 > 9) digito1 = 0
+  
+  soma = 0
+  for (let i = 0; i < 10; i++) {
+    soma += parseInt(cleanCPF.charAt(i)) * (11 - i)
+  }
+  let digito2 = 11 - (soma % 11)
+  if (digito2 > 9) digito2 = 0
+  
+  return cleanCPF.charAt(9) == digito1 && cleanCPF.charAt(10) == digito2
+}
+
+export function validarTelefone(telefone) {
+  const cleanPhone = telefone.replace(/[^\d]/g, '')
+  return cleanPhone.length === 10 || cleanPhone.length === 11
+}
+```
+
+### Teste do Validators
+
+Veja o arquivo `tests/unit/utils/validators.spec.js`:
+
+```javascript
+import { describe, it, expect } from 'vitest'
+import { validarEmail, validarCPF, validarTelefone } from '@/utils/validators'
+
+describe('Validators', () => {
+  describe('validarEmail', () => {
+    it('deve validar email correto', () => {
+      expect(validarEmail('teste@exemplo.com')).toBe(true)
+      expect(validarEmail('user@dominio.com.br')).toBe(true)
+    })
+    
+    it('deve rejeitar email sem @', () => {
+      expect(validarEmail('teste.exemplo.com')).toBe(false)
+    })
+    
+    it('deve rejeitar email sem domínio', () => {
+      expect(validarEmail('teste@')).toBe(false)
+    })
+    
+    it('deve rejeitar string vazia', () => {
+      expect(validarEmail('')).toBe(false)
+    })
+  })
+  
+  describe('validarCPF', () => {
+    it('deve validar CPF correto', () => {
+      expect(validarCPF('11144477735')).toBe(true)
+    })
+    
+    it('deve validar CPF com formatação', () => {
+      expect(validarCPF('111.444.777-35')).toBe(true)
+    })
+    
+    it('deve rejeitar CPF inválido', () => {
+      expect(validarCPF('12345678901')).toBe(false)
+    })
+    
+    it('deve rejeitar CPF com todos dígitos iguais', () => {
+      expect(validarCPF('11111111111')).toBe(false)
+    })
+  })
+  
+  describe('validarTelefone', () => {
+    it('deve validar telefone fixo', () => {
+      expect(validarTelefone('1133334444')).toBe(true)
+    })
+    
+    it('deve validar celular', () => {
+      expect(validarTelefone('11999998888')).toBe(true)
+    })
+    
+    it('deve validar com formatação', () => {
+      expect(validarTelefone('(11) 99999-8888')).toBe(true)
+    })
+  })
+})
+```
+
+**Estrutura de um teste Vitest**:
+
+```javascript
+import { describe, it, expect } from 'vitest'
+
+describe('Nome do módulo', () => {
+  it('deve fazer algo específico', () => {
+    // Arrange (preparar)
+    const entrada = 'valor'
+    
+    // Act (agir)
+    const resultado = minhaFuncao(entrada)
+    
+    // Assert (verificar)
+    expect(resultado).toBe('esperado')
+  })
+})
+```
+
+---
+
+## Parte 4: Testando Componentes Vue
+
+### Componente Counter
+
+O componente `src/components/Counter.vue`:
+
+```vue
+<template>
+  <div class="counter">
+    <h3>Contador: <span class="count">{{ count }}</span></h3>
+    <div class="buttons">
+      <button @click="decrementar" :disabled="count === 0">-</button>
+      <button @click="resetar">Reset</button>
+      <button @click="incrementar">+</button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+const count = ref(0)
+
+function incrementar() {
+  count.value++
+}
+
+function decrementar() {
+  if (count.value > 0) {
+    count.value--
+  }
+}
+
+function resetar() {
+  count.value = 0
+}
+</script>
+```
+
+### Teste do Counter
+
+Arquivo `tests/unit/components/Counter.spec.js`:
+
+```javascript
+import { describe, it, expect } from 'vitest'
+import { mount } from '@vue/test-utils'
+import Counter from '@/components/Counter.vue'
+
+describe('Counter.vue', () => {
+  it('deve renderizar o contador com valor inicial 0', () => {
+    const wrapper = mount(Counter)
+    expect(wrapper.find('.count').text()).toBe('0')
+  })
+
+  it('deve incrementar o contador', async () => {
+    const wrapper = mount(Counter)
+    const botaoIncrementar = wrapper.findAll('button')[2]
+    
+    await botaoIncrementar.trigger('click')
+    expect(wrapper.find('.count').text()).toBe('1')
+    
+    await botaoIncrementar.trigger('click')
+    expect(wrapper.find('.count').text()).toBe('2')
+  })
+
+  it('deve decrementar o contador', async () => {
+    const wrapper = mount(Counter)
+    const botaoIncrementar = wrapper.findAll('button')[2]
+    const botaoDecrementar = wrapper.findAll('button')[0]
+    
+    // Incrementar primeiro
+    await botaoIncrementar.trigger('click')
+    await botaoIncrementar.trigger('click')
+    
+    // Decrementar
+    await botaoDecrementar.trigger('click')
+    expect(wrapper.find('.count').text()).toBe('1')
+  })
+
+  it('não deve permitir valores negativos', async () => {
+    const wrapper = mount(Counter)
+    const botaoDecrementar = wrapper.findAll('button')[0]
+    
+    await botaoDecrementar.trigger('click')
+    expect(wrapper.find('.count').text()).toBe('0')
+  })
+
+  it('deve desabilitar botão decrementar quando count é 0', () => {
+    const wrapper = mount(Counter)
+    const botaoDecrementar = wrapper.findAll('button')[0]
+    
+    expect(botaoDecrementar.attributes('disabled')).toBeDefined()
+  })
+
+  it('deve resetar o contador para 0', async () => {
+    const wrapper = mount(Counter)
+    const botaoIncrementar = wrapper.findAll('button')[2]
+    const botaoReset = wrapper.findAll('button')[1]
+    
+    // Incrementar
+    await botaoIncrementar.trigger('click')
+    await botaoIncrementar.trigger('click')
+    await botaoIncrementar.trigger('click')
+    
+    // Resetar
+    await botaoReset.trigger('click')
+    expect(wrapper.find('.count').text()).toBe('0')
+  })
+})
+```
+
+**Métodos importantes do @vue/test-utils**:
+
+- `mount(Component)`: Monta componente para teste
+- `wrapper.find(selector)`: Busca elemento no template
+- `wrapper.findAll(selector)`: Busca todos elementos
+- `element.text()`: Retorna texto do elemento
+- `element.trigger('click')`: Dispara evento
+- `element.attributes()`: Retorna atributos do elemento
+
+---
+
+## Parte 5: Testando Props e Events
+
+### Componente UserCard
+
+O componente `src/components/UserCard.vue`:
+
+```vue
+<template>
+  <div class="user-card">
+    <div class="avatar">
+      <img v-if="user.avatar" :src="user.avatar" :alt="user.nome" />
+      <div v-else class="avatar-placeholder">{{ iniciais }}</div>
+    </div>
+    <div class="info">
+      <h3>{{ user.nome }}</h3>
+      <p class="user-email">{{ user.email }}</p>
+      <p v-if="user.cargo" class="user-cargo">{{ user.cargo }}</p>
+    </div>
+    <div class="actions">
+      <button v-if="showEditButton" class="btn-edit" @click="editar">
+        Editar
+      </button>
+      <button v-if="showDeleteButton" class="btn-delete" @click="excluir">
+        Excluir
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  user: {
+    type: Object,
+    required: true
+  },
+  showEditButton: {
+    type: Boolean,
+    default: true
+  },
+  showDeleteButton: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['edit', 'delete'])
+
+const iniciais = computed(() => {
+  const partes = props.user.nome.split(' ')
+  if (partes.length === 1) return partes[0][0]
+  return partes[0][0] + partes[partes.length - 1][0]
+})
+
+function editar() {
+  emit('edit', props.user)
+}
+
+function excluir() {
+  emit('delete', props.user.id || props.user.email)
+}
+</script>
+```
+
+### Teste do UserCard
+
+Arquivo `tests/unit/components/UserCard.spec.js`:
+
+```javascript
+import { describe, it, expect } from 'vitest'
+import { mount } from '@vue/test-utils'
+import UserCard from '@/components/UserCard.vue'
+
+describe('UserCard.vue', () => {
+  const usuarioMock = {
+    nome: 'João Silva',
+    email: 'joao@email.com',
+    cargo: 'Desenvolvedor'
+  }
+
+  it('deve renderizar informações do usuário', () => {
+    const wrapper = mount(UserCard, {
+      props: { user: usuarioMock }
+    })
+
+    expect(wrapper.find('h3').text()).toBe('João Silva')
+    expect(wrapper.find('.user-email').text()).toBe('joao@email.com')
+    expect(wrapper.find('.user-cargo').text()).toBe('Desenvolvedor')
+  })
+
+  it('deve mostrar iniciais quando não há avatar', () => {
+    const wrapper = mount(UserCard, {
+      props: { user: usuarioMock }
+    })
+
+    expect(wrapper.find('.avatar-placeholder').text()).toBe('JS')
+  })
+
+  it('deve mostrar imagem quando avatar está presente', () => {
+    const usuarioComAvatar = {
+      ...usuarioMock,
+      avatar: 'https://example.com/avatar.jpg'
+    }
+
+    const wrapper = mount(UserCard, {
+      props: { user: usuarioComAvatar }
+    })
+
+    const img = wrapper.find('img')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toBe('https://example.com/avatar.jpg')
+  })
+
+  it('deve exibir botão editar por padrão', () => {
+    const wrapper = mount(UserCard, {
+      props: { user: usuarioMock }
+    })
+
+    expect(wrapper.find('.btn-edit').exists()).toBe(true)
+  })
+
+  it('deve ocultar botão editar quando showEditButton é false', () => {
+    const wrapper = mount(UserCard, {
+      props: {
+        user: usuarioMock,
+        showEditButton: false
+      }
+    })
+
+    expect(wrapper.find('.btn-edit').exists()).toBe(false)
+  })
+
+  it('deve emitir evento edit ao clicar em editar', async () => {
+    const wrapper = mount(UserCard, {
+      props: { user: usuarioMock }
+    })
+
+    await wrapper.find('.btn-edit').trigger('click')
+
+    expect(wrapper.emitted()).toHaveProperty('edit')
+    expect(wrapper.emitted('edit')).toHaveLength(1)
+    expect(wrapper.emitted('edit')[0]).toEqual([usuarioMock])
+  })
+
+  it('deve emitir evento delete ao clicar em excluir', async () => {
+    const usuarioComId = {
+      ...usuarioMock,
+      id: 123
+    }
+
+    const wrapper = mount(UserCard, {
+      props: {
+        user: usuarioComId,
+        showDeleteButton: true
+      }
+    })
+
+    await wrapper.find('.btn-delete').trigger('click')
+
+    expect(wrapper.emitted()).toHaveProperty('delete')
+    expect(wrapper.emitted('delete')[0]).toEqual([123])
+  })
+})
+```
+
+**Testando Props**:
+```javascript
+const wrapper = mount(Component, {
+  props: {
+    propName: 'valor'
+  }
+})
+```
+
+**Testando Events**:
+```javascript
+await wrapper.find('button').trigger('click')
+expect(wrapper.emitted('eventName')).toBeTruthy()
+expect(wrapper.emitted('eventName')[0]).toEqual([payload])
+```
+
+---
+
+## Parte 6: Testando Pinia Stores
+
+### Criando uma Store
+
+Arquivo `src/stores/products.js` (exemplo):
+
+```javascript
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import api from '@/services/api'
+
+export const useProductsStore = defineStore('products', () => {
+  const products = ref([])
+  const loading = ref(false)
+  const error = ref(null)
+
+  const totalProducts = computed(() => products.value.length)
+  
+  const productsInStock = computed(() => {
+    return products.value.filter(p => p.estoque > 0)
+  })
+
+  async function fetchProducts() {
+    loading.value = true
+    error.value = null
+    
+    try {
+      const response = await api.get('/products')
+      products.value = response.data
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function addProduct(product) {
+    products.value.push({
+      ...product,
+      id: Date.now()
+    })
+  }
+
+  function removeProduct(id) {
+    const index = products.value.findIndex(p => p.id === id)
+    if (index !== -1) {
+      products.value.splice(index, 1)
+    }
+  }
+
+  function updateStock(id, quantidade) {
+    const product = products.value.find(p => p.id === id)
+    if (product) {
+      product.estoque = quantidade
+    }
+  }
+
+  return {
+    products,
+    loading,
+    error,
+    totalProducts,
+    productsInStock,
+    fetchProducts,
+    addProduct,
+    removeProduct,
+    updateStock
+  }
+})
+```
+
+### Teste da Store
+
+Arquivo `tests/unit/stores/products.spec.js`:
+
+```javascript
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { useProductsStore } from '@/stores/products'
+import api from '@/services/api'
+
+// Mock da API
+vi.mock('@/services/api')
+
+describe('useProductsStore', () => {
+  beforeEach(() => {
+    // Cria nova instância do Pinia antes de cada teste
+    setActivePinia(createPinia())
+  })
+
+  it('deve inicializar com estado vazio', () => {
+    const store = useProductsStore()
+    
+    expect(store.products).toEqual([])
+    expect(store.loading).toBe(false)
+    expect(store.error).toBe(null)
+  })
+
+  it('deve adicionar produto', () => {
+    const store = useProductsStore()
+    
+    const novoProduto = {
+      nome: 'Notebook',
+      preco: 3000,
+      estoque: 10
+    }
+    
+    store.addProduct(novoProduto)
+    
+    expect(store.products).toHaveLength(1)
+    expect(store.products[0].nome).toBe('Notebook')
+    expect(store.products[0].id).toBeDefined()
+  })
+
+  it('deve remover produto por id', () => {
+    const store = useProductsStore()
+    
+    store.addProduct({ nome: 'Produto 1', preco: 100 })
+    store.addProduct({ nome: 'Produto 2', preco: 200 })
+    
+    const idRemover = store.products[0].id
+    store.removeProduct(idRemover)
+    
+    expect(store.products).toHaveLength(1)
+    expect(store.products[0].nome).toBe('Produto 2')
+  })
+
+  it('deve calcular total de produtos', () => {
+    const store = useProductsStore()
+    
+    expect(store.totalProducts).toBe(0)
+    
+    store.addProduct({ nome: 'P1', preco: 10 })
+    store.addProduct({ nome: 'P2', preco: 20 })
+    
+    expect(store.totalProducts).toBe(2)
+  })
+
+  it('deve filtrar produtos em estoque', () => {
+    const store = useProductsStore()
+    
+    store.addProduct({ nome: 'P1', estoque: 5 })
+    store.addProduct({ nome: 'P2', estoque: 0 })
+    store.addProduct({ nome: 'P3', estoque: 10 })
+    
+    expect(store.productsInStock).toHaveLength(2)
+    expect(store.productsInStock[0].nome).toBe('P1')
+    expect(store.productsInStock[1].nome).toBe('P3')
+  })
+
+  it('deve atualizar estoque de produto', () => {
+    const store = useProductsStore()
+    
+    store.addProduct({ nome: 'Produto', estoque: 10 })
+    const id = store.products[0].id
+    
+    store.updateStock(id, 25)
+    
+    expect(store.products[0].estoque).toBe(25)
+  })
+
+  it('deve buscar produtos da API', async () => {
+    const store = useProductsStore()
+    
+    // Mock da resposta da API
+    const mockProducts = [
+      { id: 1, nome: 'P1', preco: 100 },
+      { id: 2, nome: 'P2', preco: 200 }
+    ]
+    
+    api.get.mockResolvedValue({ data: mockProducts })
+    
+    await store.fetchProducts()
+    
+    expect(store.loading).toBe(false)
+    expect(store.products).toEqual(mockProducts)
+    expect(api.get).toHaveBeenCalledWith('/products')
+  })
+
+  it('deve lidar com erro ao buscar produtos', async () => {
+    const store = useProductsStore()
+    
+    api.get.mockRejectedValue(new Error('Erro de rede'))
+    
+    await store.fetchProducts()
+    
+    expect(store.loading).toBe(false)
+    expect(store.error).toBe('Erro de rede')
+    expect(store.products).toEqual([])
+  })
+})
+```
+
+**Conceitos importantes**:
+
+- `setActivePinia(createPinia())`: Cria Pinia para testes
+- `beforeEach()`: Executa antes de cada teste
+- `vi.mock()`: Cria mock de módulo
+- `mockResolvedValue()`: Mock de Promise resolvida
+- `mockRejectedValue()`: Mock de Promise rejeitada
+
+---
+
+## Parte 7: Mockando APIs
+
+### Mock manual
+
+```javascript
+import { vi } from 'vitest'
+
+// Mock da função fetch
+global.fetch = vi.fn(() =>
+  Promise.resolve({
+    json: () => Promise.resolve({ data: 'mock data' })
+  })
+)
+```
+
+### Mock de módulo
+
+```javascript
+import { vi } from 'vitest'
+import api from '@/services/api'
+
+vi.mock('@/services/api')
+
+// No teste
+api.get.mockResolvedValue({ data: [] })
+api.post.mockResolvedValue({ data: { id: 1 } })
+```
+
+### Verificar chamadas
+
+```javascript
+// Verificar se foi chamado
+expect(api.get).toHaveBeenCalled()
+
+// Verificar número de chamadas
+expect(api.get).toHaveBeenCalledTimes(1)
+
+// Verificar argumentos
+expect(api.get).toHaveBeenCalledWith('/users')
+
+// Resetar mocks
+vi.clearAllMocks()
+```
+
+---
+
+## Parte 8: Cobertura de Código
+
+### Executar com cobertura
+
+```bash
+npm run test:coverage
+```
+
+### Interpretar relatório
+
+O Vitest gera relatório em `coverage/`:
+
+```
+-----------------------|---------|----------|---------|---------|
+File                   | % Stmts | % Branch | % Funcs | % Lines |
+-----------------------|---------|----------|---------|---------|
+All files             |   85.5  |   78.2   |   90.0  |   85.5  |
+ components/          |   92.3  |   85.7   |   100   |   92.3  |
+  Counter.vue         |   100   |   100    |   100   |   100   |
+  UserCard.vue        |   87.5  |   80.0   |   100   |   87.5  |
+ stores/              |   80.0  |   66.7   |   85.7  |   80.0  |
+  products.js         |   80.0  |   66.7   |   85.7  |   80.0  |
+-----------------------|---------|----------|---------|---------|
+```
+
+**Métricas**:
+- **Statements**: % de instruções testadas
+- **Branch**: % de ramificações (if/else) testadas
+- **Functions**: % de funções testadas
+- **Lines**: % de linhas testadas
+
+**Meta ideal**: 80% de cobertura ou mais
+
+---
+
+## Parte 9: Interface Gráfica do Vitest
+
+### Executar Vitest UI
+
+```bash
+npm run test:ui
+```
+
+Abre interface em `http://localhost:51204/`
+
+**Recursos da UI**:
+- Visualizar todos os testes
+- Executar testes individuais
+- Ver relatório de cobertura
+- Modo watch automático
+- Filtrar testes
+- Ver detalhes de falhas
+
+---
+
+## Parte 10: Boas Práticas
+
+### 1. Nomenclatura clara
+
+```javascript
+// ❌ Ruim
+it('test 1', () => {})
+
+// ✅ Bom
+it('deve adicionar produto ao carrinho', () => {})
+```
+
+### 2. Arrange-Act-Assert
+
+```javascript
+it('deve calcular total', () => {
+  // Arrange (preparar)
+  const carrinho = { items: [{ preco: 10 }, { preco: 20 }] }
+  
+  // Act (agir)
+  const total = calcularTotal(carrinho)
+  
+  // Assert (verificar)
+  expect(total).toBe(30)
+})
+```
+
+### 3. Um conceito por teste
+
+```javascript
+// ❌ Ruim - testa múltiplas coisas
+it('deve adicionar e remover produto', () => {
+  store.addProduct(produto)
+  expect(store.products).toHaveLength(1)
+  
+  store.removeProduct(produto.id)
+  expect(store.products).toHaveLength(0)
+})
+
+// ✅ Bom - testes separados
+it('deve adicionar produto', () => {
+  store.addProduct(produto)
+  expect(store.products).toHaveLength(1)
+})
+
+it('deve remover produto', () => {
+  store.addProduct(produto)
+  const id = store.products[0].id
+  
+  store.removeProduct(id)
+  expect(store.products).toHaveLength(0)
+})
+```
+
+### 4. Isolar testes
+
+```javascript
+// Use beforeEach para resetar estado
+beforeEach(() => {
+  setActivePinia(createPinia())
+  vi.clearAllMocks()
+})
+```
+
+### 5. Não testar implementação
+
+```javascript
+// ❌ Ruim - testa implementação interna
+it('deve chamar método interno', () => {
+  const spy = vi.spyOn(component, 'metodoInterno')
+  component.metodoPublico()
+  expect(spy).toHaveBeenCalled()
+})
+
+// ✅ Bom - testa comportamento
+it('deve exibir mensagem após salvar', async () => {
+  await wrapper.find('button').trigger('click')
+  expect(wrapper.find('.message').text()).toBe('Salvo!')
+})
+```
+
+---
+
+## Parte 11: Introdução a Testes E2E
+
+### O que são testes E2E
+
+Testes End-to-End simulam usuário real:
+- Abrem navegador
+- Navegam pela aplicação
+- Clicam, digitam, rolam página
+- Verificam resultado final
+
+### Cypress (Opcional)
+
+Para instalar Cypress:
+
+```bash
+npm install --save-dev cypress
+```
+
+Exemplo de teste E2E:
+
+```javascript
+describe('Fluxo de cadastro', () => {
+  it('deve cadastrar novo usuário', () => {
+    cy.visit('http://localhost:3000')
+    
+    cy.get('input[name="nome"]').type('João Silva')
+    cy.get('input[name="email"]').type('joao@email.com')
+    cy.get('button[type="submit"]').click()
+    
+    cy.contains('Usuário cadastrado com sucesso')
+  })
+})
+```
+
+---
+
+## Resumo
+
+Nesta aula aprendemos:
+
+✅ Configurar Vitest em projeto Vue  
+✅ Escrever testes unitários de funções  
+✅ Testar componentes Vue com @vue/test-utils  
+✅ Testar props, events e computed  
+✅ Testar Pinia stores  
+✅ Mockar APIs e dependências  
+✅ Gerar relatórios de cobertura  
+✅ Usar interface gráfica do Vitest  
+✅ Aplicar boas práticas de testes  
+
+### Comandos úteis
+
+```bash
+# Executar testes
+npm test
+
+# Testes com cobertura
+npm run test:coverage
+
+# Interface gráfica
+npm run test:ui
+
+# Executar teste específico
+npm test Counter.spec.js
+```
+
+---
+
+## Recursos Adicionais
+
+**Documentação**:
+- [Vitest](https://vitest.dev/)
+- [Vue Test Utils](https://test-utils.vuejs.org/)
+- [Pinia Testing](https://pinia.vuejs.org/cookbook/testing.html)
+
+**Artigos**:
+- [Testing Best Practices](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
+- [Vue Testing Handbook](https://lmiller1990.github.io/vue-testing-handbook/)
+
+---
+
+**Próxima aula**: Deploy e otimização de aplicações Vue.js

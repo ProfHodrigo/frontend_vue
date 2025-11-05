@@ -1,1451 +1,744 @@
-## Aula 7 — Autenticação JWT (Sistema Completo)
+# Aula 7: Autenticacao JWT com Flask e Vue.js
 
-### Objetivos
-- Implementar sistema completo de autenticação JWT
-- Criar telas de login e cadastro integradas ao Flask
-- Gerenciar estado de autenticação de forma reativa
-- Implementar guards de rotas para proteção
-- Trabalhar com refresh tokens e persistência de sessão
-- Aplicar boas práticas de segurança no frontend
+## Introducao
+
+Nesta aula aprenderemos a implementar um sistema completo de autenticacao usando JSON Web Tokens (JWT) em uma arquitetura client-server.
+
+**Objetivo**: Criar um fluxo de login/cadastro onde o frontend (Vue.js) autentica usuarios por meio de uma API REST (Flask), gerencia tokens JWT no cliente e envia automaticamente tokens em requisicoes protegidas.
+
+**O que voce aprendera**:
+- Como funciona autenticacao baseada em tokens (JWT)
+- Implementar login e cadastro no backend (Flask)
+- Armazenar e usar tokens no frontend (Vue.js)
+- Proteger rotas e endpoints
+- Validar sessoes do usuario
 
 ---
 
-### Introdução à Autenticação JWT
+## Parte 1: Conceitos Fundamentais
 
-#### O que é JWT (JSON Web Token)?
+### O que eh JWT (JSON Web Token)
 
-JWT é um padrão para transmitir informações de forma segura entre partes:
+JWT eh um padrao para transmitir informacoes entre sistemas de forma segura e verificavel. Tem tres partes separadas por pontos:
 
 ```
 HEADER.PAYLOAD.SIGNATURE
 ```
 
-**Vantagens:**
-- ✅ Stateless (sem necessidade de sessão no servidor)
-- ✅ Autocontido (carrega informações do usuário)
-- ✅ Compatível com APIs REST
-- ✅ Funciona bem com SPAs
+Exemplo real:
 
-**Fluxo de Autenticação:**
-1. **Login** → Frontend envia credenciais
-2. **Validação** → Backend valida e gera JWT
-3. **Armazenamento** → Frontend armazena token
-4. **Requisições** → Token enviado no header Authorization
-5. **Verificação** → Backend valida token a cada request
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzk5MjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+```
+
+**Vantagens do JWT**:
+
+- Stateless: nao precisa armazenar sessoes no servidor
+- Auto-contido: leva informacoes do usuario dentro dele
+- Seguro: assinado com chave secreta
+- Ideal para SPAs (Single Page Applications)
+
+### Fluxo de Autenticacao JWT (passo a passo)
+
+1. Usuario preenche email+senha e clica "Entrar"
+2. Frontend envia credenciais em POST para `/login` no backend
+3. Backend valida credenciais contra banco de dados
+4. Se correto, backend gera JWT token com dados do usuario
+5. Backend retorna token para o frontend
+6. Frontend armazena token em localStorage (persistencia local)
+7. Nas proximas requisicoes, frontend envia token no header `Authorization: Bearer <token>`
+8. Backend valida token em cada requisicao protegida
+9. Se token expirou, usuario faz logout automaticamente
 
 ---
 
-### Serviço de Autenticação
+## Parte 2: Backend Flask
 
-#### `src/services/AuthService.js`
+### Arquitetura do Backend
+
+O backend roda em `http://localhost:5000` e oferece tres tipos de endpoints:
+
+- **Publicos** (qualquer um acessa): `/login`, `/form` (cadastro), `/health`
+- **Protegidos** (requer JWT): `/api/perfil`
+
+### Banco de Dados
+
+A aplicacao usa SQLite (simples para desenvolvimento). Modelo de Usuario:
+
+```
+Usuario:
+  - id (chave primaria)
+  - nome (string)
+  - email (string, unico)
+  - senha (hasheada com Werkzeug)
+  - data_criacao (timestamp)
+```
+
+**Importante**: senhas sao sempre hasheadas antes de armazenar usando `generate_password_hash()`. Nunca armazene senhas em plain text.
+
+### Endpoints do Backend
+
+#### 1. POST /login
+
+Faz login e retorna JWT token.
+
+Request:
+
+```json
+{
+  "email": "prof@admin.com",
+  "senha": "admin123"
+}
+```
+
+Response (sucesso - 200):
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "nome": "Prof Admin",
+    "email": "prof@admin.com",
+    "data_criacao": "2025-10-24T10:30:00"
+  }
+}
+```
+
+Response (erro - 401):
+
+```json
+{
+  "message": "Email ou senha incorretos."
+}
+```
+
+**Implementacao no backend** (resumida):
+
+1. Recebe email+senha do request
+2. Busca usuario pelo email no banco
+3. Verifica se senha corresponde ao hash (usando `check_password()`)
+4. Se ok, gera token com `create_access_token(identity=usuario.id)`
+5. Retorna token e dados do usuario
+
+#### 2. POST /form
+
+Cria novo usuario (cadastro).
+
+Request:
+
+```json
+{
+  "nome": "Aluno User",
+  "email": "aluno1@user.com",
+  "senha": "user123"
+}
+```
+
+Response (sucesso - 201):
+
+```json
+{
+  "message": "Usuario criado com sucesso",
+  "user": {
+    "id": 2,
+    "nome": "Aluno User",
+    "email": "aluno@user.com",
+    "data_criacao": "2025-10-24T11:00:00"
+  }
+}
+```
+
+Response (erro - 422):
+
+```json
+{
+  "message": "Email ja registrado"
+}
+```
+
+**Implementacao no backend**:
+
+1. Valida se email ja existe (deve ser unico)
+2. Valida tamanho minimo da senha (6+ caracteres)
+3. Hash da senha com `usuario.set_password(senha)`
+4. Salva novo usuario no banco
+5. Retorna dados criados
+
+#### 3. GET /api/perfil (PROTEGIDO)
+
+Retorna dados do usuario logado. Requer token JWT.
+
+Request:
+
+```
+GET /api/perfil
+Header: Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+Response (sucesso - 200):
+
+```json
+{
+  "id": 1,
+  "nome": "Prof Admin",
+  "email": "prof@admin.com",
+  "data_criacao": "2025-10-24T10:30:00"
+}
+```
+
+Response (erro - 401):
+
+```json
+{
+  "message": "Token invalido ou expirado"
+}
+```
+
+**Implementacao no backend**:
+
+1. Decorator `@jwt_required()` valida token automaticamente
+2. Extrai user_id do token com `get_jwt_identity()`
+3. Busca usuario no banco por ID
+4. Retorna dados do usuario
+
+
+---
+
+## Parte 3: Frontend Vue.js
+
+### Servico de API (axios)
+
+Arquivo: `src/services/api.js`
+
+Responsabilidade: criar instancia axios centralizada com configuracoes:
+- baseURL: `http://localhost:5000`
+- Interceptor de requisicoes: adiciona header `Authorization: Bearer <token>` automaticamente
+
+**Como funciona o interceptor**:
+
+1. Toda requisicao passa pelo interceptor ANTES de ser enviada
+2. Interceptor busca token em localStorage
+3. Se token existe, adiciona no header Authorization
+4. Requisicao eh enviada com o header
+
+**Beneficio**: nao precisa adicionar token manualmente em cada requisicao.
+
+### Servico de Autenticacao (AuthService)
+
+Arquivo: `src/services/AuthService.js`
+
+Encapsula toda logica de autenticacao. Principais metodos:
+
+#### login(credentials)
+
+Faz login e armazena token localmente.
+
+**Input**:
 
 ```javascript
-import api from './api'
+{
+  email: "prof@admin.com",
+  senha: "admin123"
+}
+```
 
-export class AuthService {
-  /**
-   * Realiza login do usuário
-   */
-  static async login(credentials) {
-    try {
-      const response = await api.post('/login', credentials)
-      
-      const { access_token, user } = response.data
-      
-      // Armazenar token e dados do usuário
-      localStorage.setItem('authToken', access_token)
-      localStorage.setItem('userData', JSON.stringify(user))
-      
-      return {
-        sucesso: true,
-        token: access_token,
-        usuario: user,
-        mensagem: 'Login realizado com sucesso!'
-      }
-    } catch (error) {
-      return {
-        sucesso: false,
-        token: null,
-        usuario: null,
-        mensagem: this.tratarErroAuth(error)
-      }
-    }
-  }
+**Output** (sucesso):
 
-  /**
-   * Cadastra novo usuário
-   */
-  static async cadastrar(dadosUsuario) {
-    try {
-      const response = await api.post('/form', dadosUsuario)
-      
-      return {
-        sucesso: true,
-        dados: response.data,
-        mensagem: 'Cadastro realizado com sucesso! Faça login para continuar.'
-      }
-    } catch (error) {
-      return {
-        sucesso: false,
-        dados: null,
-        mensagem: this.tratarErroAuth(error)
-      }
-    }
-  }
+```javascript
+{
+  sucesso: true,
+  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  usuario: { id, nome, email, data_criacao },
+  mensagem: "Login realizado com sucesso!"
+}
+```
 
-  /**
-   * Realiza logout
-   */
-  static logout() {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('userData')
-    
-    // Redirecionar para login
-    window.location.href = '/'
-    
-    return {
-      sucesso: true,
-      mensagem: 'Logout realizado com sucesso!'
-    }
-  }
+**O que faz internamente**:
 
-  /**
-   * Verifica se usuário está autenticado
-   */
-  static isAuthenticated() {
-    const token = localStorage.getItem('authToken')
-    
-    if (!token) {
-      return false
-    }
-    
-    // Verificar se token não expirou
-    try {
-      const payload = this.parseJWT(token)
-      const now = Date.now() / 1000
-      
-      return payload.exp > now
-    } catch (error) {
-      console.error('Erro ao verificar token:', error)
-      return false
-    }
-  }
+1. Chama `api.post('/login', credentials)`
+2. Recebe token e usuario
+3. Armazena em localStorage: `authToken` e `userData`
+4. Retorna resultado
 
-  /**
-   * Obtém dados do usuário atual
-   */
-  static getCurrentUser() {
-    const userData = localStorage.getItem('userData')
-    
-    if (!userData) {
-      return null
-    }
-    
-    try {
-      return JSON.parse(userData)
-    } catch (error) {
-      console.error('Erro ao parsear dados do usuário:', error)
-      return null
-    }
-  }
+#### cadastrar(dadosUsuario)
 
-  /**
-   * Obtém token atual
-   */
-  static getToken() {
-    return localStorage.getItem('authToken')
-  }
+Cria novo usuario.
 
-  /**
-   * Obtém perfil do usuário via API
-   */
-  static async obterPerfil() {
-    try {
-      const response = await api.get('/api/perfil')
-      
-      // Atualizar dados locais
-      localStorage.setItem('userData', JSON.stringify(response.data))
-      
-      return {
-        sucesso: true,
-        usuario: response.data,
-        mensagem: 'Perfil carregado com sucesso'
-      }
-    } catch (error) {
-      return {
-        sucesso: false,
-        usuario: null,
-        mensagem: this.tratarErroAuth(error)
-      }
-    }
-  }
+**Input**:
 
-  /**
-   * Parseia JWT para extrair payload
-   */
-  static parseJWT(token) {
-    const base64Url = token.split('.')[1]
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    )
-    
-    return JSON.parse(jsonPayload)
-  }
+```javascript
+{
+  nome: "Aluno User",
+  email: "aluno@user.com",
+  senha: "user123"
+}
+```
 
-  /**
-   * Trata erros específicos de autenticação
-   */
-  static tratarErroAuth(error) {
-    if (error.response) {
-      const status = error.response.status
-      const data = error.response.data
-      
-      switch (status) {
-        case 400:
-          return data.message || 'Dados inválidos. Verifique os campos.'
-        case 401:
-          return 'Email ou senha incorretos.'
-        case 403:
-          return 'Acesso negado. Verifique suas permissões.'
-        case 422:
-          return data.message || 'Dados de cadastro inválidos.'
-        case 429:
-          return 'Muitas tentativas. Tente novamente em alguns minutos.'
-        default:
-          return `Erro no servidor (${status}). Tente novamente.`
-      }
-    } else if (error.request) {
-      return 'Erro de conexão. Verifique se o servidor está rodando.'
-    } else {
-      return `Erro inesperado: ${error.message}`
-    }
-  }
+**Output**: `{ sucesso, dados, mensagem }`
 
-  /**
-   * Força refresh dos dados do usuário
-   */
-  static async refreshUserData() {
-    if (!this.isAuthenticated()) {
-      return { sucesso: false, mensagem: 'Usuário não autenticado' }
-    }
-    
-    return await this.obterPerfil()
+#### logout()
+
+Remove sessao local e redireciona para login.
+
+**O que faz**:
+
+1. Remove `authToken` do localStorage
+2. Remove `userData` do localStorage
+3. Redireciona pagina para `/` (tela de login)
+
+#### isAuthenticated()
+
+Verifica se usuario tem sessao valida.
+
+**Logic**:
+
+1. Busca token em localStorage
+2. Se nao existe, retorna false
+3. Se existe, decodifica payload do JWT
+4. Verifica campo `exp` (expiracao em segundos Unix)
+5. Compara com hora atual: se `exp > agora`, eh valido
+6. Retorna true/false
+
+#### getCurrentUser() e getToken()
+
+Simples getters de dados locais.
+
+- `getCurrentUser()`: retorna usuario em localStorage (parse JSON)
+- `getToken()`: retorna token string bruto
+
+#### obterPerfil() e refreshUserData()
+
+Faz chamada protegida ao backend.
+
+**O que faz**:
+
+1. Faz `api.get('/api/perfil')` (inclui token automaticamente via interceptor)
+2. Se sucesso, atualiza `userData` em localStorage
+3. Retorna `{ sucesso, usuario, mensagem }`
+
+**Uso**: ao iniciar app ou quando usuario clica "Atualizar Perfil"
+
+#### parseJWT(token)
+
+Decodifica payload do JWT.
+
+**O que faz**:
+
+1. Pega parte 2 do token (separado por pontos)
+2. Decodifica base64url para string JSON
+3. Faz parse e retorna objeto JavaScript
+
+**Resultado**:
+
+```javascript
+{
+  sub: "1",           // subject (user ID)
+  iat: 1516239022,    // issued at (hora de emissao)
+  exp: 1516243622,    // expiration (hora de expiracao)
+}
+```
+
+#### tratarErroAuth(error)
+
+Converte erros axios em mensagens amigaveis.
+
+**Mapeia HTTP status para mensagens**:
+
+- 400: "Dados inválidos"
+- 401: "Email ou senha incorretos"
+- 422: "Email ja registrado" ou outra validacao
+- 429: "Muitas tentativas"
+- Erro de conexao: "Erro de conexao"
+
+### Componentes de UI
+
+#### LoginForm.vue
+
+Responsabilidade: UI de login com validacao local.
+
+**Campos**:
+
+- email (obrigatorio, formato valido)
+- senha (minimo 6 caracteres)
+- lembrar-me (checkbox, opcional)
+
+**Fluxo**:
+
+1. Usuario preenche e clica "Entrar"
+2. Componente valida campos localmente
+3. Chama `AuthService.login(credentials)`
+4. Aguarda resposta
+5. Se sucesso: emite evento `login-sucesso` para App.vue
+6. Se erro: exibe alert com mensagem amigavel
+
+**Eventos emitidos**:
+
+- `login-sucesso`: quando login funciona (leva dados do usuario para pai)
+- `mostrar-cadastro`: quando usuario clica link "Cadastre-se"
+
+**Debug info**: mostra credenciais de teste (apenas em desenvolvimento, NODE_ENV=development)
+
+#### CadastroForm.vue
+
+Responsabilidade: UI de cadastro com validacoes.
+
+**Campos**:
+
+- nome (minimo 2 caracteres)
+- email (formato valido)
+- senha (minimo 8 caracteres)
+- confirmar senha (deve coincidir)
+- aceitar termos (obrigatorio)
+
+**Validacoes extras**:
+
+- Forca da senha: mostra barra colorida (fraca/media/forte)
+- Confirmacao de senha
+- Aceite de termos de uso
+
+**Fluxo**:
+
+1. Usuario preenche formulario
+2. Clica "Criar Conta"
+3. Componente valida campos
+4. Chama `AuthService.cadastrar(dados)`
+5. Se sucesso: emite `cadastro-sucesso`
+6. Pai recebe evento e volta para tela de login
+
+**Eventos emitidos**:
+
+- `cadastro-sucesso`: quando cadastro funciona
+- `mostrar-login`: quando usuario clica link "Faca login aqui"
+
+### App.vue - Orquestracao
+
+Responsabilidade: orquestrar fluxo da aplicacao (login vs logged in).
+
+**State local**:
+
+```javascript
+data() {
+  return {
+    telaAtual: 'login',      // 'login' ou 'cadastro'
+    usuarioLogado: null,     // null se nao autenticado
+    dataLogin: null,         // timestamp do login
+    testandoAPI: false,      // flag enquanto testa API
+    atualizandoPerfil: false,// flag enquanto atualiza perfil
+    logAtividades: []        // lista de acoes do usuario
   }
 }
 ```
 
+**Fluxo na montagem** (mounted):
+
+1. Chama `AuthService.isAuthenticated()`
+2. Se true: carrega usuario com `AuthService.getCurrentUser()`
+3. Tenta sincronizar perfil com `AuthService.refreshUserData()`
+4. Exibe UI protegida (se autenticado) ou tela de login (se nao)
+
+**Eventos recebidos de componentes filhos**:
+
+- `login-sucesso`: atualiza `usuarioLogado`
+- `cadastro-sucesso`: volta para tela de login
+- `mostrar-cadastro`: muda para formulario de cadastro
+- `mostrar-login`: muda para formulario de login
+
+**Acoes disponiveis quando logado**:
+
+- `fazerLogout()`: chama `AuthService.logout()`
+- `testarAPIProtegida()`: faz requisicao GET /api/perfil para validar token
+- `atualizarPerfil()`: chama `AuthService.refreshUserData()`
+- `copiarToken()`: copia token para clipboard (util para testes)
+
 ---
 
-### Componente de Login
+## Parte 4: Fluxo Completo (Passo a Passo)
 
-#### `src/components/LoginForm.vue`
+### Cenario 1: Primeiro Login
 
-```vue
-<template>
-  <div class="login-form">
-    <div class="card shadow-lg" style="max-width: 400px; margin: 0 auto;">
-      <div class="card-header bg-primary text-white text-center">
-        <h4 class="mb-0">
-          <i class="fas fa-sign-in-alt me-2"></i>
-          Entrar no Sistema
-        </h4>
-      </div>
-      
-      <div class="card-body">
-        <!-- Alertas -->
-        <div v-if="mensagem" class="alert" :class="alertClass" role="alert">
-          <i class="fas" :class="mensagem.tipo === 'erro' ? 'fa-exclamation-triangle' : 'fa-check-circle'"></i>
-          {{ mensagem.texto }}
-        </div>
+1. Usuario acessa `http://localhost:3000`
+2. App.vue monta e chama `isAuthenticated()` - retorna false
+3. LoginForm exibido na tela
+4. Usuario digita `prof@admin.com` e `admin123`
+5. Clica botao "Entrar"
+6. LoginForm valida e chama `AuthService.login(...)`
+7. AuthService faz POST para `http://localhost:5000/login`
+8. Backend procura usuario por email, valida senha, gera JWT
+9. Backend retorna `{ access_token, user }`
+10. AuthService armazena em localStorage: `authToken` e `userData`
+11. LoginForm emite `login-sucesso` com dados do usuario
+12. App.vue recebe evento, atualiza `usuarioLogado`
+13. UI muda de LoginForm para "App principal"
+14. Usuario ve seu nome e dados na tela
 
-        <!-- Formulário de Login -->
-        <form @submit.prevent="fazerLogin">
-          <div class="mb-3">
-            <label for="email" class="form-label">
-              <i class="fas fa-envelope me-2"></i>
-              Email
-            </label>
-            <input
-              id="email"
-              v-model.trim="form.email"
-              type="email"
-              class="form-control"
-              :class="{ 'is-invalid': erros.email }"
-              placeholder="seu@email.com"
-              required
-              :disabled="fazendoLogin"
-              autocomplete="username"
-            >
-            <div v-if="erros.email" class="invalid-feedback">
-              {{ erros.email }}
-            </div>
-          </div>
+### Cenario 2: Recarregar Pagina (Sessao Persistente)
 
-          <div class="mb-3">
-            <label for="senha" class="form-label">
-              <i class="fas fa-lock me-2"></i>
-              Senha
-            </label>
-            <div class="input-group">
-              <input
-                id="senha"
-                v-model="form.senha"
-                :type="mostrarSenha ? 'text' : 'password'"
-                class="form-control"
-                :class="{ 'is-invalid': erros.senha }"
-                placeholder="Sua senha"
-                required
-                :disabled="fazendoLogin"
-                autocomplete="current-password"
-              >
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                @click="mostrarSenha = !mostrarSenha"
-                :disabled="fazendoLogin"
-              >
-                <i class="fas" :class="mostrarSenha ? 'fa-eye-slash' : 'fa-eye'"></i>
-              </button>
-            </div>
-            <div v-if="erros.senha" class="invalid-feedback">
-              {{ erros.senha }}
-            </div>
-          </div>
+1. Usuario recarrega pagina (F5)
+2. App.vue monta
+3. Chama `isAuthenticated()`
+4. isAuthenticated valida token em localStorage - ainda valido
+5. Chama `getCurrentUser()` - retorna usuario em localStorage
+6. Chama `refreshUserData()` para sincronizar com servidor
+7. Backend recebe GET /api/perfil com token no header Authorization
+8. Backend valida token, retorna dados atualizados
+9. App.vue ve usuario autenticado e mostra UI principal
+10. Usuario ja conectado sem fazer login novamente
 
-          <div class="mb-3 form-check">
-            <input
-              id="lembrarMe"
-              v-model="form.lembrarMe"
-              type="checkbox"
-              class="form-check-input"
-              :disabled="fazendoLogin"
-            >
-            <label for="lembrarMe" class="form-check-label">
-              Lembrar-me neste dispositivo
-            </label>
-          </div>
+### Cenario 3: Token Expirado
 
-          <div class="d-grid">
-            <button
-              type="submit"
-              class="btn btn-primary"
-              :disabled="!formularioValido || fazendoLogin"
-            >
-              <span v-if="fazendoLogin" class="spinner-border spinner-border-sm me-2"></span>
-              <i v-else class="fas fa-sign-in-alt me-2"></i>
-              {{ fazendoLogin ? 'Entrando...' : 'Entrar' }}
-            </button>
-          </div>
-        </form>
+1. Usuario logado por mais de 1 hora
+2. Tenta fazer acao (ex: clicar "Atualizar Perfil")
+3. Frontend faz requisicao com token antigo
+4. Backend recebe, valida JWT, encontra `exp < agora`
+5. Backend retorna erro 401 (Unauthorized)
+6. Frontend recebe erro, chama `AuthService.logout()`
+7. Logout remove localStorage e redireciona para /login
+8. Usuario precisa fazer login novamente
 
-        <!-- Links adicionais -->
-        <div class="text-center mt-3">
-          <p class="small text-muted mb-2">
-            Não tem uma conta?
-            <a href="#" @click.prevent="$emit('mostrar-cadastro')" class="text-decoration-none">
-              Cadastre-se aqui
-            </a>
-          </p>
-          <a href="#" @click.prevent="mostrarEsqueceuSenha" class="small text-muted text-decoration-none">
-            Esqueceu sua senha?
-          </a>
-        </div>
-      </div>
-    </div>
+### Cenario 4: Cadastro
 
-    <!-- Debug Info (apenas em desenvolvimento) -->
-    <div v-if="isDevelopment" class="mt-4 card">
-      <div class="card-header">
-        <small>Debug Info (dev only)</small>
-      </div>
-      <div class="card-body">
-        <small class="text-muted">
-          <strong>Usuários de teste:</strong><br>
-          admin@example.com / admin123<br>
-          user@example.com / user123
-        </small>
-      </div>
-    </div>
-  </div>
-</template>
+1. Usuario novo acessa app
+2. Clica link "Cadastre-se aqui" em LoginForm
+3. App.vue muda para CadastroForm
+4. Usuario preenche: nome, email, senha (8+ chars), confirma senha, aceita termos
+5. Clica "Criar Conta"
+6. CadastroForm valida e chama `AuthService.cadastrar(...)`
+7. AuthService faz POST para `/form`
+8. Backend valida: email unico, senha comprimento minimo
+9. Backend hash a senha, cria usuario no banco
+10. Backend retorna sucesso
+11. CadastroForm emite `cadastro-sucesso`
+12. App.vue volta para tela de login
+13. Usuario faz login com novas credenciais
 
-<script>
-import { AuthService } from '@/services/AuthService'
+---
 
-export default {
-  name: 'LoginForm',
-  emits: ['mostrar-cadastro', 'login-sucesso'],
-  data() {
-    return {
-      form: {
-        email: '',
-        senha: '',
-        lembrarMe: false
-      },
-      erros: {},
-      mensagem: null,
-      fazendoLogin: false,
-      mostrarSenha: false
-    }
-  },
-  computed: {
-    formularioValido() {
-      return this.form.email && 
-             this.form.senha && 
-             this.isValidEmail(this.form.email) &&
-             Object.keys(this.erros).length === 0
-    },
-    alertClass() {
-      return {
-        'alert-success': this.mensagem?.tipo === 'sucesso',
-        'alert-danger': this.mensagem?.tipo === 'erro',
-        'alert-info': this.mensagem?.tipo === 'info'
-      }
-    },
-    isDevelopment() {
-      return process.env.NODE_ENV === 'development'
-    }
-  },
-  watch: {
-    'form.email'() {
-      this.validarEmail()
-    },
-    'form.senha'() {
-      this.validarSenha()
-    }
-  },
-  methods: {
-    async fazerLogin() {
-      // Validar formulário
-      this.validarFormulario()
-      
-      if (!this.formularioValido) {
-        this.mostrarMensagem('erro', 'Corrija os erros no formulário')
-        return
-      }
+## Parte 5: Como Executar Localmente
 
-      this.fazendoLogin = true
-      this.mensagem = null
+### Passo 1: Instalar Dependencias
 
-      try {
-        const resultado = await AuthService.login({
-          email: this.form.email,
-          senha: this.form.senha
-        })
+**Frontend**:
 
-        if (resultado.sucesso) {
-          this.mostrarMensagem('sucesso', resultado.mensagem)
-          
-          // Aguardar um momento para mostrar sucesso
-          setTimeout(() => {
-            this.$emit('login-sucesso', resultado.usuario)
-          }, 1000)
-        } else {
-          this.mostrarMensagem('erro', resultado.mensagem)
-        }
-      } catch (error) {
-        console.error('Erro inesperado no login:', error)
-        this.mostrarMensagem('erro', 'Erro inesperado. Tente novamente.')
-      } finally {
-        this.fazendoLogin = false
-      }
-    },
-
-    validarFormulario() {
-      this.erros = {}
-      
-      this.validarEmail()
-      this.validarSenha()
-    },
-
-    validarEmail() {
-      if (!this.form.email) {
-        this.erros.email = 'Email é obrigatório'
-      } else if (!this.isValidEmail(this.form.email)) {
-        this.erros.email = 'Email inválido'
-      } else {
-        delete this.erros.email
-      }
-    },
-
-    validarSenha() {
-      if (!this.form.senha) {
-        this.erros.senha = 'Senha é obrigatória'
-      } else if (this.form.senha.length < 6) {
-        this.erros.senha = 'Senha deve ter pelo menos 6 caracteres'
-      } else {
-        delete this.erros.senha
-      }
-    },
-
-    isValidEmail(email) {
-      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      return regex.test(email)
-    },
-
-    mostrarMensagem(tipo, texto) {
-      this.mensagem = { tipo, texto }
-      
-      // Auto-hide após 5 segundos
-      setTimeout(() => {
-        this.mensagem = null
-      }, 5000)
-    },
-
-    mostrarEsqueceuSenha() {
-      this.mostrarMensagem('info', 'Funcionalidade em desenvolvimento. Contate o administrador.')
-    }
-  }
-}
-</script>
-
-<style scoped>
-.login-form {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
-}
-
-.card {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
-}
-
-.form-control:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-  transform: translateY(-1px);
-}
-
-.invalid-feedback {
-  display: block;
-}
-
-/* Animação para alertas */
-.alert {
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-</style>
+```powershell
+cd frontend_vue
+npm install
 ```
 
----
+**Backend**:
 
-### Componente de Cadastro
-
-#### `src/components/CadastroForm.vue`
-
-```vue
-<template>
-  <div class="cadastro-form">
-    <div class="card shadow-lg" style="max-width: 450px; margin: 0 auto;">
-      <div class="card-header bg-success text-white text-center">
-        <h4 class="mb-0">
-          <i class="fas fa-user-plus me-2"></i>
-          Criar Conta
-        </h4>
-      </div>
-      
-      <div class="card-body">
-        <!-- Alertas -->
-        <div v-if="mensagem" class="alert" :class="alertClass" role="alert">
-          <i class="fas" :class="mensagem.tipo === 'erro' ? 'fa-exclamation-triangle' : 'fa-check-circle'"></i>
-          {{ mensagem.texto }}
-        </div>
-
-        <!-- Formulário de Cadastro -->
-        <form @submit.prevent="fazerCadastro">
-          <div class="mb-3">
-            <label for="nome" class="form-label">
-              <i class="fas fa-user me-2"></i>
-              Nome Completo
-            </label>
-            <input
-              id="nome"
-              v-model.trim="form.nome"
-              type="text"
-              class="form-control"
-              :class="{ 'is-invalid': erros.nome }"
-              placeholder="Seu nome completo"
-              required
-              :disabled="fazendoCadastro"
-              autocomplete="name"
-            >
-            <div v-if="erros.nome" class="invalid-feedback">
-              {{ erros.nome }}
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label for="email" class="form-label">
-              <i class="fas fa-envelope me-2"></i>
-              Email
-            </label>
-            <input
-              id="email"
-              v-model.trim="form.email"
-              type="email"
-              class="form-control"
-              :class="{ 'is-invalid': erros.email }"
-              placeholder="seu@email.com"
-              required
-              :disabled="fazendoCadastro"
-              autocomplete="email"
-            >
-            <div v-if="erros.email" class="invalid-feedback">
-              {{ erros.email }}
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label for="senha" class="form-label">
-              <i class="fas fa-lock me-2"></i>
-              Senha
-            </label>
-            <div class="input-group">
-              <input
-                id="senha"
-                v-model="form.senha"
-                :type="mostrarSenha ? 'text' : 'password'"
-                class="form-control"
-                :class="{ 'is-invalid': erros.senha }"
-                placeholder="Sua senha"
-                required
-                :disabled="fazendoCadastro"
-                autocomplete="new-password"
-              >
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                @click="mostrarSenha = !mostrarSenha"
-                :disabled="fazendoCadastro"
-              >
-                <i class="fas" :class="mostrarSenha ? 'fa-eye-slash' : 'fa-eye'"></i>
-              </button>
-            </div>
-            <div v-if="erros.senha" class="invalid-feedback">
-              {{ erros.senha }}
-            </div>
-            <div class="form-text">
-              <small>A senha deve ter pelo menos 8 caracteres</small>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label for="confirmarSenha" class="form-label">
-              <i class="fas fa-lock me-2"></i>
-              Confirmar Senha
-            </label>
-            <input
-              id="confirmarSenha"
-              v-model="form.confirmarSenha"
-              :type="mostrarSenha ? 'text' : 'password'"
-              class="form-control"
-              :class="{ 'is-invalid': erros.confirmarSenha }"
-              placeholder="Confirme sua senha"
-              required
-              :disabled="fazendoCadastro"
-              autocomplete="new-password"
-            >
-            <div v-if="erros.confirmarSenha" class="invalid-feedback">
-              {{ erros.confirmarSenha }}
-            </div>
-          </div>
-
-          <!-- Força da senha -->
-          <div v-if="form.senha" class="mb-3">
-            <div class="progress" style="height: 8px;">
-              <div
-                class="progress-bar"
-                :class="forcaSenhaClass"
-                :style="{ width: forcaSenhaPercent + '%' }"
-              ></div>
-            </div>
-            <small :class="forcaSenhaTextClass">
-              Força: {{ forcaSenhaTexto }}
-            </small>
-          </div>
-
-          <div class="mb-3 form-check">
-            <input
-              id="aceitarTermos"
-              v-model="form.aceitarTermos"
-              type="checkbox"
-              class="form-check-input"
-              :class="{ 'is-invalid': erros.aceitarTermos }"
-              required
-              :disabled="fazendoCadastro"
-            >
-            <label for="aceitarTermos" class="form-check-label">
-              Aceito os <a href="#" @click.prevent="mostrarTermos">termos de uso</a> 
-              e <a href="#" @click.prevent="mostrarPrivacidade">política de privacidade</a>
-            </label>
-            <div v-if="erros.aceitarTermos" class="invalid-feedback">
-              {{ erros.aceitarTermos }}
-            </div>
-          </div>
-
-          <div class="d-grid">
-            <button
-              type="submit"
-              class="btn btn-success"
-              :disabled="!formularioValido || fazendoCadastro"
-            >
-              <span v-if="fazendoCadastro" class="spinner-border spinner-border-sm me-2"></span>
-              <i v-else class="fas fa-user-plus me-2"></i>
-              {{ fazendoCadastro ? 'Cadastrando...' : 'Criar Conta' }}
-            </button>
-          </div>
-        </form>
-
-        <!-- Links adicionais -->
-        <div class="text-center mt-3">
-          <p class="small text-muted mb-0">
-            Já tem uma conta?
-            <a href="#" @click.prevent="$emit('mostrar-login')" class="text-decoration-none">
-              Faça login aqui
-            </a>
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script>
-import { AuthService } from '@/services/AuthService'
-
-export default {
-  name: 'CadastroForm',
-  emits: ['mostrar-login', 'cadastro-sucesso'],
-  data() {
-    return {
-      form: {
-        nome: '',
-        email: '',
-        senha: '',
-        confirmarSenha: '',
-        aceitarTermos: false
-      },
-      erros: {},
-      mensagem: null,
-      fazendoCadastro: false,
-      mostrarSenha: false
-    }
-  },
-  computed: {
-    formularioValido() {
-      return this.form.nome && 
-             this.form.email && 
-             this.form.senha &&
-             this.form.confirmarSenha &&
-             this.form.aceitarTermos &&
-             this.isValidEmail(this.form.email) &&
-             this.form.senha === this.form.confirmarSenha &&
-             this.form.senha.length >= 8 &&
-             Object.keys(this.erros).length === 0
-    },
-    alertClass() {
-      return {
-        'alert-success': this.mensagem?.tipo === 'sucesso',
-        'alert-danger': this.mensagem?.tipo === 'erro',
-        'alert-info': this.mensagem?.tipo === 'info'
-      }
-    },
-    forcaSenha() {
-      const senha = this.form.senha
-      let score = 0
-      
-      if (senha.length >= 8) score += 1
-      if (senha.length >= 12) score += 1
-      if (/[a-z]/.test(senha)) score += 1
-      if (/[A-Z]/.test(senha)) score += 1
-      if (/[0-9]/.test(senha)) score += 1
-      if (/[^A-Za-z0-9]/.test(senha)) score += 1
-      
-      return score
-    },
-    forcaSenhaPercent() {
-      return (this.forcaSenha / 6) * 100
-    },
-    forcaSenhaClass() {
-      const score = this.forcaSenha
-      if (score <= 2) return 'bg-danger'
-      if (score <= 4) return 'bg-warning'
-      return 'bg-success'
-    },
-    forcaSenhaTexto() {
-      const score = this.forcaSenha
-      if (score <= 2) return 'Fraca'
-      if (score <= 4) return 'Média'
-      return 'Forte'
-    },
-    forcaSenhaTextClass() {
-      const score = this.forcaSenha
-      if (score <= 2) return 'text-danger'
-      if (score <= 4) return 'text-warning'
-      return 'text-success'
-    }
-  },
-  watch: {
-    'form.nome'() {
-      this.validarNome()
-    },
-    'form.email'() {
-      this.validarEmail()
-    },
-    'form.senha'() {
-      this.validarSenha()
-      if (this.form.confirmarSenha) {
-        this.validarConfirmarSenha()
-      }
-    },
-    'form.confirmarSenha'() {
-      this.validarConfirmarSenha()
-    },
-    'form.aceitarTermos'() {
-      this.validarTermos()
-    }
-  },
-  methods: {
-    async fazerCadastro() {
-      // Validar formulário
-      this.validarFormulario()
-      
-      if (!this.formularioValido) {
-        this.mostrarMensagem('erro', 'Corrija os erros no formulário')
-        return
-      }
-
-      this.fazendoCadastro = true
-      this.mensagem = null
-
-      try {
-        const resultado = await AuthService.cadastrar({
-          nome: this.form.nome,
-          email: this.form.email,
-          senha: this.form.senha
-        })
-
-        if (resultado.sucesso) {
-          this.mostrarMensagem('sucesso', resultado.mensagem)
-          
-          // Aguardar um momento para mostrar sucesso
-          setTimeout(() => {
-            this.$emit('cadastro-sucesso')
-          }, 2000)
-        } else {
-          this.mostrarMensagem('erro', resultado.mensagem)
-        }
-      } catch (error) {
-        console.error('Erro inesperado no cadastro:', error)
-        this.mostrarMensagem('erro', 'Erro inesperado. Tente novamente.')
-      } finally {
-        this.fazendoCadastro = false
-      }
-    },
-
-    validarFormulario() {
-      this.erros = {}
-      
-      this.validarNome()
-      this.validarEmail()
-      this.validarSenha()
-      this.validarConfirmarSenha()
-      this.validarTermos()
-    },
-
-    validarNome() {
-      if (!this.form.nome) {
-        this.erros.nome = 'Nome é obrigatório'
-      } else if (this.form.nome.length < 2) {
-        this.erros.nome = 'Nome deve ter pelo menos 2 caracteres'
-      } else {
-        delete this.erros.nome
-      }
-    },
-
-    validarEmail() {
-      if (!this.form.email) {
-        this.erros.email = 'Email é obrigatório'
-      } else if (!this.isValidEmail(this.form.email)) {
-        this.erros.email = 'Email inválido'
-      } else {
-        delete this.erros.email
-      }
-    },
-
-    validarSenha() {
-      if (!this.form.senha) {
-        this.erros.senha = 'Senha é obrigatória'
-      } else if (this.form.senha.length < 8) {
-        this.erros.senha = 'Senha deve ter pelo menos 8 caracteres'
-      } else {
-        delete this.erros.senha
-      }
-    },
-
-    validarConfirmarSenha() {
-      if (!this.form.confirmarSenha) {
-        this.erros.confirmarSenha = 'Confirmação de senha é obrigatória'
-      } else if (this.form.senha !== this.form.confirmarSenha) {
-        this.erros.confirmarSenha = 'Senhas não coincidem'
-      } else {
-        delete this.erros.confirmarSenha
-      }
-    },
-
-    validarTermos() {
-      if (!this.form.aceitarTermos) {
-        this.erros.aceitarTermos = 'Você deve aceitar os termos de uso'
-      } else {
-        delete this.erros.aceitarTermos
-      }
-    },
-
-    isValidEmail(email) {
-      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      return regex.test(email)
-    },
-
-    mostrarMensagem(tipo, texto) {
-      this.mensagem = { tipo, texto }
-      
-      // Auto-hide após 5 segundos
-      setTimeout(() => {
-        this.mensagem = null
-      }, 5000)
-    },
-
-    mostrarTermos() {
-      this.mostrarMensagem('info', 'Termos de uso em desenvolvimento.')
-    },
-
-    mostrarPrivacidade() {
-      this.mostrarMensagem('info', 'Política de privacidade em desenvolvimento.')
-    }
-  }
-}
-</script>
-
-<style scoped>
-.cadastro-form {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-  padding: 20px;
-}
-
-.card {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
-}
-
-.form-control:focus {
-  border-color: #11998e;
-  box-shadow: 0 0 0 0.2rem rgba(17, 153, 142, 0.25);
-}
-
-.btn-success {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-  border: none;
-}
-
-.btn-success:hover {
-  background: linear-gradient(135deg, #0e8478 0%, #2dd65a 100%);
-  transform: translateY(-1px);
-}
-
-.invalid-feedback {
-  display: block;
-}
-
-.progress {
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.progress-bar {
-  transition: all 0.3s ease;
-}
-</style>
+```powershell
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
----
+### Passo 2: Popular Banco de Dados
 
-### Aplicação Principal com Autenticação
+Para agilizar a aula, vamos rodar um script:
 
-#### `src/App.vue` (versão Aula 7)
-
-```vue
-<template>
-  <div id="app">
-    <!-- Tela de Login/Cadastro -->
-    <div v-if="!usuarioLogado">
-      <LoginForm 
-        v-if="telaAtual === 'login'"
-        @mostrar-cadastro="telaAtual = 'cadastro'"
-        @login-sucesso="handleLoginSucesso"
-      />
-      <CadastroForm 
-        v-else
-        @mostrar-login="telaAtual = 'login'"
-        @cadastro-sucesso="telaAtual = 'login'"
-      />
-    </div>
-
-    <!-- Aplicação Principal (Usuário Logado) -->
-    <div v-else>
-      <!-- Header da aplicação -->
-      <header class="bg-primary text-white py-3 mb-4">
-        <div class="container">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h1 class="mb-0">
-                <i class="fas fa-graduation-cap me-2"></i>
-                Frontend Vue.js - Aula 7
-              </h1>
-              <p class="mb-0 opacity-75">Sistema de Autenticação JWT</p>
-            </div>
-            
-            <!-- Menu do usuário -->
-            <div class="dropdown">
-              <button 
-                class="btn btn-outline-light dropdown-toggle d-flex align-items-center"
-                type="button"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-user-circle me-2"></i>
-                {{ usuarioLogado.nome }}
-              </button>
-              <ul class="dropdown-menu">
-                <li>
-                  <a class="dropdown-item" href="#" @click.prevent="mostrarPerfil">
-                    <i class="fas fa-user me-2"></i>
-                    Meu Perfil
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="#" @click.prevent="atualizarPerfil">
-                    <i class="fas fa-sync me-2"></i>
-                    Atualizar Dados
-                  </a>
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                  <a class="dropdown-item text-danger" href="#" @click.prevent="fazerLogout">
-                    <i class="fas fa-sign-out-alt me-2"></i>
-                    Sair
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <!-- Conteúdo principal -->
-      <div class="container">
-        <!-- Informações do usuário -->
-        <div class="row mb-4">
-          <div class="col-md-8">
-            <div class="card">
-              <div class="card-header">
-                <h5 class="mb-0">
-                  <i class="fas fa-info-circle me-2"></i>
-                  Informações da Sessão
-                </h5>
-              </div>
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-6">
-                    <p><strong>Nome:</strong> {{ usuarioLogado.nome }}</p>
-                    <p><strong>Email:</strong> {{ usuarioLogado.email }}</p>
-                  </div>
-                  <div class="col-md-6">
-                    <p><strong>Login em:</strong> {{ dataLogin }}</p>
-                    <p><strong>Token válido:</strong> 
-                      <span class="badge bg-success">
-                        <i class="fas fa-check-circle me-1"></i>
-                        Sim
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                
-                <!-- Ações -->
-                <div class="d-flex gap-2 mt-3">
-                  <button 
-                    class="btn btn-outline-primary btn-sm"
-                    @click="testarAPIProtegida"
-                    :disabled="testandoAPI"
-                  >
-                    <i class="fas fa-shield-alt" v-if="!testandoAPI"></i>
-                    <i class="fas fa-spinner fa-spin" v-else></i>
-                    Testar API Protegida
-                  </button>
-                  
-                  <button 
-                    class="btn btn-outline-success btn-sm"
-                    @click="atualizarPerfil"
-                    :disabled="atualizandoPerfil"
-                  >
-                    <i class="fas fa-user-edit" v-if="!atualizandoPerfil"></i>
-                    <i class="fas fa-spinner fa-spin" v-else></i>
-                    Atualizar Perfil
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-md-4">
-            <div class="card">
-              <div class="card-header">
-                <h6 class="mb-0">
-                  <i class="fas fa-key me-2"></i>
-                  Token JWT
-                </h6>
-              </div>
-              <div class="card-body">
-                <div class="form-group">
-                  <textarea 
-                    class="form-control small"
-                    rows="6"
-                    :value="tokenFormatado"
-                    readonly
-                  ></textarea>
-                </div>
-                <button 
-                  class="btn btn-outline-secondary btn-sm mt-2 w-100"
-                  @click="copiarToken"
-                >
-                  <i class="fas fa-copy me-1"></i>
-                  Copiar Token
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Log de atividades -->
-        <div class="card">
-          <div class="card-header d-flex justify-content-between">
-            <h5 class="mb-0">
-              <i class="fas fa-history me-2"></i>
-              Log de Atividades
-            </h5>
-            <button 
-              class="btn btn-sm btn-outline-secondary"
-              @click="limparLog"
-            >
-              Limpar
-            </button>
-          </div>
-          <div class="card-body">
-            <div v-if="logAtividades.length === 0" class="text-center text-muted py-3">
-              <i class="fas fa-clipboard-list fa-2x mb-2"></i>
-              <p>Nenhuma atividade registrada</p>
-            </div>
-            <div v-else>
-              <div 
-                v-for="(atividade, index) in logAtividades.slice().reverse()" 
-                :key="index"
-                class="border-bottom py-2"
-              >
-                <div class="d-flex justify-content-between">
-                  <div>
-                    <i class="fas" :class="atividade.icone"></i>
-                    <strong>{{ atividade.titulo }}</strong>
-                    <small class="text-muted ms-2">{{ atividade.detalhes }}</small>
-                  </div>
-                  <small class="text-muted">
-                    {{ formatarTempo(atividade.timestamp) }}
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <footer class="bg-light text-center py-3 mt-5">
-        <div class="container">
-          <p class="text-muted mb-0">
-            Aula 7 - Autenticação JWT | 
-            <a href="https://jwt.io/" target="_blank" class="text-decoration-none">
-              Saiba mais sobre JWT
-            </a>
-          </p>
-        </div>
-      </footer>
-    </div>
-  </div>
-</template>
-
-<script>
-import { AuthService } from '@/services/AuthService'
-import LoginForm from '@/components/LoginForm.vue'
-import CadastroForm from '@/components/CadastroForm.vue'
-
-export default {
-  name: 'App',
-  components: {
-    LoginForm,
-    CadastroForm
-  },
-  data() {
-    return {
-      telaAtual: 'login',
-      usuarioLogado: null,
-      dataLogin: null,
-      testandoAPI: false,
-      atualizandoPerfil: false,
-      logAtividades: []
-    }
-  },
-  computed: {
-    tokenFormatado() {
-      const token = AuthService.getToken()
-      if (!token) return ''
-      
-      // Quebrar o token em linhas para melhor visualização
-      return token.match(/.{1,50}/g)?.join('\n') || token
-    }
-  },
-  async mounted() {
-    // Verificar se usuário já está logado
-    if (AuthService.isAuthenticated()) {
-      this.usuarioLogado = AuthService.getCurrentUser()
-      this.dataLogin = new Date().toLocaleString()
-      
-      this.adicionarLog('fa-sign-in-alt text-success', 'Login automático', 'Sessão restaurada')
-      
-      // Atualizar dados do perfil
-      await this.atualizarPerfil()
-    }
-  },
-  methods: {
-    handleLoginSucesso(usuario) {
-      this.usuarioLogado = usuario
-      this.dataLogin = new Date().toLocaleString()
-      
-      this.adicionarLog('fa-sign-in-alt text-success', 'Login realizado', `Bem-vindo, ${usuario.nome}!`)
-    },
-
-    async fazerLogout() {
-      const confirmou = confirm('Tem certeza que deseja sair?')
-      
-      if (confirmou) {
-        AuthService.logout()
-        // O AuthService.logout() já redireciona
-      }
-    },
-
-    async testarAPIProtegida() {
-      this.testandoAPI = true
-      
-      try {
-        const resultado = await AuthService.obterPerfil()
-        
-        if (resultado.sucesso) {
-          this.adicionarLog('fa-shield-alt text-success', 'API testada', 'Acesso autorizado com sucesso')
-          alert('✅ API protegida funcionando! Dados atualizados.')
-        } else {
-          this.adicionarLog('fa-shield-alt text-danger', 'Erro na API', resultado.mensagem)
-          alert('❌ Erro: ' + resultado.mensagem)
-        }
-      } catch (error) {
-        this.adicionarLog('fa-shield-alt text-danger', 'Erro inesperado', error.message)
-        alert('❌ Erro inesperado: ' + error.message)
-      } finally {
-        this.testandoAPI = false
-      }
-    },
-
-    async atualizarPerfil() {
-      this.atualizandoPerfil = true
-      
-      try {
-        const resultado = await AuthService.refreshUserData()
-        
-        if (resultado.sucesso) {
-          this.usuarioLogado = resultado.usuario
-          this.adicionarLog('fa-user-edit text-info', 'Perfil atualizado', 'Dados sincronizados com servidor')
-        } else {
-          this.adicionarLog('fa-user-edit text-warning', 'Erro ao atualizar', resultado.mensagem)
-        }
-      } catch (error) {
-        this.adicionarLog('fa-user-edit text-danger', 'Erro inesperado', error.message)
-      } finally {
-        this.atualizandoPerfil = false
-      }
-    },
-
-    mostrarPerfil() {
-      alert(`Perfil:\nNome: ${this.usuarioLogado.nome}\nEmail: ${this.usuarioLogado.email}\nID: ${this.usuarioLogado.id}`)
-    },
-
-    copiarToken() {
-      const token = AuthService.getToken()
-      if (token) {
-        navigator.clipboard.writeText(token).then(() => {
-          this.adicionarLog('fa-copy text-info', 'Token copiado', 'Token JWT copiado para área de transferência')
-          alert('✅ Token copiado para área de transferência!')
-        }).catch(() => {
-          alert('❌ Erro ao copiar token')
-        })
-      }
-    },
-
-    adicionarLog(icone, titulo, detalhes) {
-      this.logAtividades.push({
-        icone,
-        titulo,
-        detalhes,
-        timestamp: Date.now()
-      })
-      
-      // Manter apenas os últimos 20 logs
-      if (this.logAtividades.length > 20) {
-        this.logAtividades = this.logAtividades.slice(-20)
-      }
-    },
-
-    limparLog() {
-      this.logAtividades = []
-    },
-
-    formatarTempo(timestamp) {
-      return new Date(timestamp).toLocaleTimeString()
-    }
-  }
-}
-</script>
-
-<style>
-/* Reutilizar estilos globais */
-body {
-  margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-#app {
-  min-height: 100vh;
-}
-
-.dropdown-menu {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-textarea {
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
-  line-height: 1.2;
-}
-</style>
+```powershell
+cd backend
+python seed.py
 ```
 
----
+O script faz:
+- Conecta ao backend em http://localhost:5000
+- Popula diretamente o banco
+- Exibe os usuarios criados
 
-### Exercícios Práticos da Aula 7
+### Passo 3: Iniciar Backend
 
-#### Exercício 1: Proteção de Rotas
-Implementar guards para proteger rotas:
-- Guard de autenticação
-- Redirecionamento automático
-- Verificação de permissões de usuário
-
-#### Exercício 2: Refresh Token
-Implementar sistema de refresh automático:
-- Token refresh antes do vencimento
-- Renovação silenciosa
-- Logout automático em caso de falha
-
-#### Exercício 3: Lembrança de Login
-Melhorar persistência:
-- Opção "Lembrar-me"
-- Storage seguro
-- Logout de todos os dispositivos
-
----
-
-### Comandos Git e Deploy
-
-```bash
-# Criar branch da aula 7
-git checkout master
-git checkout -b aula-07-auth
-
-# Implementar componentes
-# ... adicionar arquivos ...
-
-git add .
-git commit -m "Aula 7 - Sistema completo de autenticação JWT"
-git push -u origin aula-07-auth
+```powershell
+cd backend
+venv\Scripts\activate
+python app.py
 ```
 
+Saida esperada:
+
+```
+ * Running on http://127.0.0.1:5000
+ * Debugger is active!
+```
+
+### Passo 4: Iniciar Frontend
+
+Em outro terminal:
+
+```powershell
+cd frontend_vue
+npm run dev
+```
+
+Saida esperada:
+
+```
+  VITE v4.5.14  ready in X ms
+
+  Local:   http://localhost:5173/
+
+  OU
+
+  Local:   http://localhost:3000/
+```
+
+### Passo 5: Testar
+
+1. Abrir navegador em `http://localhost:5173` ou `http://localhost:3000`
+2. Ver formulario de login
+3. Testar login com `prof@admin.com` / `admin123`
+4. Se sucesso, ver tela principal com dados do usuario
+5. Clicar "Atualizar Perfil" para testar requisicao protegida
+6. Clicar "Sair" para fazer logout
+
 ---
 
-### Checklist de Verificação
+## Parte 6: Troubleshooting
 
-- [ ] AuthService implementado e funcionando
-- [ ] LoginForm com validações
-- [ ] CadastroForm com validações
-- [ ] Integração com backend Flask
-- [ ] Token JWT armazenado e enviado
-- [ ] Interceptadores configurados
-- [ ] Estados de loading/erro tratados
-- [ ] Logout funcionando
-- [ ] Persistência de sessão
-- [ ] Interface responsiva
+### Erro: "Network Error" ao fazer login
+
+**Causa**: Backend nao esta rodando.
+
+**Solucao**:
+1. Certificar que `http://localhost:5000` responde (testar /health)
+2. Se porta 5000 estiver em uso, mudar em `backend/app.py` (linha `port=5000`)
+
+### Erro: "CORS error"
+
+**Causa**: Backend nao tem CORS ativado para frontend.
+
+**Solucao**: Ja esta configurado em app.py com `CORS(app)`. Certificar que:
+- Backend rodando em `http://localhost:5000`
+- Frontend rodando em `http://localhost:3000` ou `http://localhost:5173`
+
+### Erro: "Email ou senha incorretos"
+
+**Causa**: Credenciais erradas ou banco nao foi populado com seed.py.
+
+**Solucao**:
+1. Certificar que rodou o `seed.py`.
+2. Verificar se usuarios estao no banco (pode usar SQLite browser)
+3. Testar com: prof@admin.com / admin123 ou aluno1@user.com / user123
+
+### Erro: "Token invalido ou expirado"
+
+**Causa**: Token expirou (1 hora) ou localStorage foi limpo.
+
+**Solucao**: Fazer login novamente.
+
+### Frontend mostra "Nao autenticado" apos recarregar
+
+**Causa**: localStorage foi limpo pelo navegador.
+
+**Solucao**: Fazer login novamente ou verificar se navegador tem cache ativado.
 
 ---
 
-### Próxima Aula
+## Parte 7: Seguranca
 
-Na **Aula 8** veremos:
-- Pinia para gerenciamento de estado global
-- Store de usuário e autenticação
-- Actions assíncronas
-- Getters computados
-- Persistência de estado
+Pontos importantes para producao:
 
-### Conceitos de Segurança
+1. **Chave secreta do JWT**: Mudar `JWT_SECRET_KEY` em `.env` para valor aleatorio forte
+2. **HTTPS obrigatorio**: Em producao usar HTTPS (nao HTTP)
+3. **httpOnly cookies**: Considerar armazenar token em cookie httpOnly (mais seguro que localStorage)
+4. **Validacao de senha**: Reforcar requisitos (minimo 12 chars, maiusculas, numeros, especiais)
+5. **Rate limiting**: Limitar tentativas de login para prevenir brute force
+6. **Refresh tokens**: Implementar refresh token com TTL maior para renovacao automatica
 
-1. **Nunca armazenar senhas em plain text**
-2. **Tokens tem tempo de expiração**
-3. **HTTPS obrigatório em produção**
-4. **Limpar dados sensíveis no logout**
-5. **Validação tanto client quanto server**
+---
+
+## Parte 8: Exercicios Praticos
+
+### Exercício 1: Dashboard do Usuario (45 min)
+
+**Objetivo**: Criar um componente Dashboard que exibe informacoes do usuario autenticado.
+
+**O que voce aprendera**:
+- Acessar dados do usuario autenticado
+- Criar componentes reutilizaveis
+- Exibir informacoes formatadas (datas, tempo de sessao)
+- Usar computed properties para calcular dados
+
+**Tarefas**:
+1. Criar componente `Dashboard.vue` em `src/components/`
+2. Exibir informacoes do usuario: nome, email, data de criacao
+3. Calcular e exibir "tempo de sessao" (desde o login)
+4. Adicionar card com estatisticas: total de logins, ultimo acesso
+5. Integrar Dashboard no `App.vue` (area autenticada)
+
+**Resultado esperado**: Ao fazer login, usuario ve dashboard com suas informacoes e estatisticas.
+
+**Dica**: Use `AuthService.getCurrentUser()` para obter dados do usuario.
+
+---
+
+### Exercício 2: Edicao de Perfil (45 min)
+
+**Objetivo**: Implementar funcionalidade de edicao de perfil do usuario.
+
+**O que voce aprendera**:
+- Criar formularios controlados no Vue
+- Validacao de campos (nome, email)
+- Fazer requisicoes PUT/PATCH para API
+- Atualizar estado local apos edicao bem-sucedida
+- Tratar erros de validacao do backend
+
+**Tarefas**:
+1. Criar componente `EditarPerfil.vue` em `src/components/`
+2. Criar formulario com campos: nome, email (senha nao editavel)
+3. Pre-popular campos com dados atuais do usuario
+4. Implementar validacao local (nome >= 2 chars, email valido)
+5. Criar metodo `AuthService.atualizarPerfil(dados)` para enviar PUT `/api/perfil`
+6. Implementar endpoint PUT `/api/perfil` no backend (Flask)
+7. Atualizar localStorage apos edicao bem-sucedida
+8. Exibir mensagem de sucesso/erro
+
+**Resultado esperado**: Usuario edita seu nome/email e ve mudancas refletidas imediatamente.
+
+**Dica**: Reutilize logica de validacao do `CadastroForm.vue`.
+
+---
+
+### Exercício 3: Historico de Acessos (30 min)
+
+**Objetivo**: Criar uma lista de atividades do usuario (historico de acoes).
+
+**O que voce aprendera**:
+- Gerenciar estado local (array de atividades)
+- Usar v-for para renderizar listas
+- Formatar timestamps de forma legivel
+- Persistir dados em localStorage
+- Adicionar/remover items dinamicamente
+
+**Tarefas**:
+1. Criar componente `HistoricoAcessos.vue` em `src/components/`
+2. Criar array `atividades` para armazenar: tipo, descricao, timestamp
+3. Adicionar atividade automaticamente ao fazer login
+4. Adicionar atividade ao testar API protegida
+5. Adicionar atividade ao atualizar perfil
+6. Renderizar lista com v-for (mais recentes primeiro)
+7. Adicionar botao "Limpar historico"
+8. Persistir historico em localStorage (chave: `historico_atividades`)
+9. Recuperar historico ao montar componente
+
+**Resultado esperado**: Usuario ve lista de todas as acoes realizadas na sessao.
+
+**Dica**: Já existe logica similar em `App.vue` (`logAtividades`). Extrair para componente.
+
+---
+
+## Resumo
+
+Aula 7 apresentou:
+
+- JWT como forma segura de autenticacao stateless
+- Backend Flask com autenticacao, banco de dados, endpoints protegidos
+- Frontend Vue.js com formularios, validacao, persistencia de token
+- Fluxo completo: login -> token -> requisicoes protegidas -> logout
+- Como executar localmente e troubleshooting comun
+- Pontos de seguranca para producao
+- **3 exercicios praticos focados em Vue.js e JWT**
+
+**Proxima aula**: Pinia para gerenciamento de estado global (store de usuario, produtos, etc).

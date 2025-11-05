@@ -1,1251 +1,1477 @@
-## Aula 10 — Performance e Otimização
+# Aula 10 - Estilização em Vue.js
 
-### Objetivos
-- Otimizar performance de aplicações Vue
-- Implementar lazy loading e code splitting
-- Configurar bundle optimization
-- Usar virtual scrolling
-- Aplicar memoização e caching
-- Otimizar renderização de listas
-- Configurar tree shaking
-- Implementar PWA features
+## Objetivos da Aula
 
----
+Nesta aula você vai aprender a estilizar aplicações Vue.js de forma profissional e responsiva, utilizando CSS moderno, frameworks como Bootstrap, e técnicas avançadas de componentes estilizados.
 
-### Análise de Performance
+**O que você vai dominar:**
+- CSS moderno com variáveis e flexbox/grid
+- Integração do Bootstrap 5 com Vue.js
+- Estilos scoped e global em componentes
+- Design responsivo e mobile-first
+- Pré-processadores CSS (SCSS/Sass)
+- Temas dinâmicos e modo escuro
+- Animações e transições
+- Arquitetura CSS escalável
 
-#### Ferramentas de Análise
+## Parte 1: Fundamentos de CSS em Vue.js
 
-##### Vue DevTools Performance Tab
-```javascript
-// Ativar profiling em development
-app.config.performance = true
+### Estilos em Componentes Vue
 
-// Medir performance de componentes
-const app = createApp({
-  created() {
-    performance.mark('app-created-start')
-  },
-  mounted() {
-    performance.mark('app-created-end')
-    performance.measure('app-created', 'app-created-start', 'app-created-end')
-  }
-})
+Vue permite três formas principais de adicionar CSS aos componentes:
+
+#### 1. Estilos Scoped
+
+Estilos que afetam apenas o componente atual:
+
+```vue
+<template>
+  <div class="card">
+    <h2 class="title">Meu Card</h2>
+    <p class="content">Conteúdo do card</p>
+  </div>
+</template>
+
+<script setup>
+// Lógica do componente
+</script>
+
+<style scoped>
+.card {
+  padding: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: white;
+}
+
+.title {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.5rem;
+}
+
+.content {
+  color: #666;
+  line-height: 1.6;
+}
+</style>
 ```
 
-##### Bundle Analyzer
+#### 2. Estilos Globais
+
+Estilos que afetam toda a aplicação:
+
+```vue
+<style>
+/* Sem 'scoped' - aplica globalmente */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+</style>
+```
+
+#### 3. Estilos Dinâmicos com Binding
+
+Aplicar estilos reativos baseados em dados:
+
+```vue
+<template>
+  <div 
+    class="box"
+    :style="{ 
+      backgroundColor: cor, 
+      width: largura + 'px',
+      height: altura + 'px'
+    }"
+  >
+    Caixa colorida
+  </div>
+  
+  <div 
+    :class="{
+      'ativo': isAtivo,
+      'destaque': temDestaque,
+      'erro': temErro
+    }"
+  >
+    Classes dinâmicas
+  </div>
+  
+  <button 
+    :class="['btn', tamanho, { 'btn-primary': isPrimario }]"
+  >
+    Botão com múltiplas classes
+  </button>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+const cor = ref('#42b983')
+const largura = ref(200)
+const altura = ref(150)
+
+const isAtivo = ref(true)
+const temDestaque = ref(false)
+const temErro = ref(false)
+
+const tamanho = ref('btn-lg')
+const isPrimario = ref(true)
+</script>
+
+<style scoped>
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.ativo {
+  opacity: 1;
+}
+
+.destaque {
+  box-shadow: 0 0 10px rgba(66, 185, 131, 0.5);
+}
+
+.erro {
+  border: 2px solid #e74c3c;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-lg {
+  font-size: 1.2rem;
+}
+
+.btn-primary {
+  background-color: #42b983;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #359268;
+}
+</style>
+```
+
+### CSS Moderno: Variáveis CSS
+
+As variáveis CSS (custom properties) permitem reutilizar valores e criar temas dinâmicos:
+
+```vue
+<template>
+  <div class="app">
+    <h1>Título Principal</h1>
+    <p class="texto">Parágrafo com cores do tema</p>
+    <button class="botao">Ação</button>
+  </div>
+</template>
+
+<style scoped>
+.app {
+  /* Definir variáveis CSS */
+  --cor-primaria: #42b983;
+  --cor-secundaria: #2c3e50;
+  --cor-texto: #333;
+  --espacamento-base: 1rem;
+  --raio-borda: 8px;
+  --fonte-principal: 'Segoe UI', sans-serif;
+  
+  font-family: var(--fonte-principal);
+  padding: var(--espacamento-base);
+}
+
+h1 {
+  color: var(--cor-primaria);
+  margin-bottom: calc(var(--espacamento-base) * 2);
+}
+
+.texto {
+  color: var(--cor-texto);
+  margin-bottom: var(--espacamento-base);
+}
+
+.botao {
+  background-color: var(--cor-primaria);
+  color: white;
+  padding: var(--espacamento-base);
+  border: none;
+  border-radius: var(--raio-borda);
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.botao:hover {
+  background-color: var(--cor-secundaria);
+}
+</style>
+```
+
+### Flexbox e Grid Layouts
+
+#### Flexbox para Layouts Flexíveis
+
+```vue
+<template>
+  <div class="container-flex">
+    <div class="item">Item 1</div>
+    <div class="item">Item 2</div>
+    <div class="item">Item 3</div>
+  </div>
+  
+  <div class="navbar">
+    <div class="logo">Logo</div>
+    <nav class="menu">
+      <a href="#">Home</a>
+      <a href="#">Produtos</a>
+      <a href="#">Contato</a>
+    </nav>
+    <div class="actions">
+      <button>Login</button>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.container-flex {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.item {
+  flex: 1;
+  padding: 2rem;
+  background-color: #f0f0f0;
+  text-align: center;
+  border-radius: 8px;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #2c3e50;
+  color: white;
+}
+
+.menu {
+  display: flex;
+  gap: 2rem;
+}
+
+.menu a {
+  color: white;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.menu a:hover {
+  color: #42b983;
+}
+</style>
+```
+
+#### CSS Grid para Layouts Complexos
+
+```vue
+<template>
+  <div class="grid-container">
+    <header class="header">Header</header>
+    <aside class="sidebar">Sidebar</aside>
+    <main class="main-content">Conteúdo Principal</main>
+    <footer class="footer">Footer</footer>
+  </div>
+  
+  <div class="product-grid">
+    <div v-for="n in 6" :key="n" class="product-card">
+      Produto {{ n }}
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.grid-container {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "sidebar main"
+    "footer footer";
+  grid-template-columns: 250px 1fr;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  gap: 1rem;
+}
+
+.header {
+  grid-area: header;
+  background-color: #2c3e50;
+  color: white;
+  padding: 1.5rem;
+}
+
+.sidebar {
+  grid-area: sidebar;
+  background-color: #f5f5f5;
+  padding: 1.5rem;
+}
+
+.main-content {
+  grid-area: main;
+  padding: 1.5rem;
+}
+
+.footer {
+  grid-area: footer;
+  background-color: #2c3e50;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.product-card {
+  padding: 2rem;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  text-align: center;
+  transition: transform 0.3s;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+</style>
+```
+
+## Parte 2: Bootstrap 5 com Vue.js
+
+### Instalação do Bootstrap
+
+Existem várias formas de integrar Bootstrap em Vue.js:
+
+#### Método 1: Via CDN (Mais Simples)
+
+No arquivo `index.html`:
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vue.js + Bootstrap</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div id="app"></div>
+  
+  <!-- Bootstrap JavaScript Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
+```
+
+#### Método 2: Via npm (Recomendado)
+
 ```bash
-# Instalar webpack-bundle-analyzer
-npm install --save-dev webpack-bundle-analyzer
-
-# Analisar build
-npm run build -- --report
+npm install bootstrap@5.3.0
+npm install @popperjs/core
 ```
 
-#### `src/utils/performance.js`
+No arquivo `src/main.js`:
 
 ```javascript
-/**
- * Utilitários de performance
- */
-export class PerformanceMonitor {
-  constructor() {
-    this.metrics = new Map()
-    this.observers = new Map()
-  }
+import { createApp } from 'vue'
+import App from './App.vue'
 
-  /**
-   * Marcar início de uma operação
-   */
-  startMeasure(name) {
-    performance.mark(`${name}-start`)
-    this.metrics.set(name, { startTime: performance.now() })
-  }
+// Importar Bootstrap CSS
+import 'bootstrap/dist/css/bootstrap.min.css'
 
-  /**
-   * Finalizar medição
-   */
-  endMeasure(name) {
-    const startTime = this.metrics.get(name)?.startTime
-    if (!startTime) return
+// Importar Bootstrap JavaScript
+import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
-    performance.mark(`${name}-end`)
-    performance.measure(name, `${name}-start`, `${name}-end`)
+createApp(App).mount('#app')
+```
+
+### Componentes Bootstrap em Vue
+
+#### Cards e Grid System
+
+```vue
+<template>
+  <div class="container mt-5">
+    <h1 class="text-center mb-4">Produtos em Destaque</h1>
     
-    const measure = performance.getEntriesByName(name, 'measure')[0]
-    this.metrics.set(name, {
-      ...this.metrics.get(name),
-      duration: measure.duration,
-      endTime: performance.now()
-    })
-
-    return measure.duration
-  }
-
-  /**
-   * Obter métricas
-   */
-  getMetric(name) {
-    return this.metrics.get(name)
-  }
-
-  /**
-   * Observer de performance
-   */
-  observePerformance(callback) {
-    if ('PerformanceObserver' in window) {
-      const observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries()
-        callback(entries)
-      })
-
-      observer.observe({ 
-        entryTypes: ['measure', 'navigation', 'resource', 'paint'] 
-      })
-      
-      return observer
-    }
-  }
-
-  /**
-   * Métricas de Core Web Vitals
-   */
-  measureWebVitals() {
-    // Largest Contentful Paint
-    if ('PerformanceObserver' in window) {
-      const lcpObserver = new PerformanceObserver((list) => {
-        const entries = list.getEntries()
-        const lastEntry = entries[entries.length - 1]
-        console.log('LCP:', lastEntry.startTime)
-      })
-      lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true })
-
-      // First Input Delay
-      const fidObserver = new PerformanceObserver((list) => {
-        const entries = list.getEntries()
-        entries.forEach(entry => {
-          console.log('FID:', entry.processingStart - entry.startTime)
-        })
-      })
-      fidObserver.observe({ type: 'first-input', buffered: true })
-
-      // Cumulative Layout Shift
-      let clsValue = 0
-      const clsObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (!entry.hadRecentInput) {
-            clsValue += entry.value
-          }
-        }
-        console.log('CLS:', clsValue)
-      })
-      clsObserver.observe({ type: 'layout-shift', buffered: true })
-    }
-  }
-
-  /**
-   * Debounce para otimizar eventos
-   */
-  static debounce(func, wait) {
-    let timeout
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout)
-        func(...args)
-      }
-      clearTimeout(timeout)
-      timeout = setTimeout(later, wait)
-    }
-  }
-
-  /**
-   * Throttle para otimizar scroll events
-   */
-  static throttle(func, limit) {
-    let inThrottle
-    return function() {
-      const args = arguments
-      const context = this
-      if (!inThrottle) {
-        func.apply(context, args)
-        inThrottle = true
-        setTimeout(() => inThrottle = false, limit)
-      }
-    }
-  }
-}
-
-// Instância global
-export const performanceMonitor = new PerformanceMonitor()
-```
-
----
-
-### Lazy Loading e Code Splitting
-
-#### Lazy Loading de Rotas
-
-##### `src/router/index.js`
-
-```javascript
-import { createRouter, createWebHistory } from 'vue-router'
-
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    {
-      path: '/',
-      name: 'Home',
-      component: () => import('@/views/Home.vue')
-    },
-    {
-      path: '/products',
-      name: 'Products',
-      component: () => import('@/views/Products.vue'),
-      children: [
-        {
-          path: 'list',
-          name: 'ProductList',
-          component: () => import('@/views/ProductList.vue')
-        },
-        {
-          path: 'details/:id',
-          name: 'ProductDetails',
-          component: () => import('@/views/ProductDetails.vue')
-        }
-      ]
-    },
-    {
-      path: '/admin',
-      name: 'Admin',
-      component: () => import('@/views/admin/AdminLayout.vue'),
-      meta: { requiresAuth: true },
-      children: [
-        {
-          path: 'dashboard',
-          name: 'AdminDashboard',
-          component: () => import('@/views/admin/Dashboard.vue')
-        },
-        {
-          path: 'users',
-          name: 'UserManagement',
-          component: () => import('@/views/admin/UserManagement.vue')
-        }
-      ]
-    }
-  ]
-})
-
-export default router
-```
-
-#### Lazy Loading de Componentes
-
-##### `src/components/LazyComponents.js`
-
-```javascript
-import { defineAsyncComponent } from 'vue'
-
-// Componente lazy simples
-export const LazyProductCard = defineAsyncComponent(() =>
-  import('@/components/ProductCard.vue')
-)
-
-// Componente lazy com loading state
-export const LazyChart = defineAsyncComponent({
-  loader: () => import('@/components/Chart.vue'),
-  loadingComponent: {
-    template: `
-      <div class="loading-placeholder">
-        <div class="spinner-border" role="status">
-          <span class="visually-hidden">Carregando gráfico...</span>
+    <div class="row g-4">
+      <div 
+        v-for="produto in produtos" 
+        :key="produto.id"
+        class="col-12 col-md-6 col-lg-4"
+      >
+        <div class="card h-100">
+          <img 
+            :src="produto.imagem" 
+            class="card-img-top" 
+            :alt="produto.nome"
+          >
+          <div class="card-body">
+            <h5 class="card-title">{{ produto.nome }}</h5>
+            <p class="card-text">{{ produto.descricao }}</p>
+            <p class="text-primary fw-bold">
+              R$ {{ produto.preco.toFixed(2) }}
+            </p>
+          </div>
+          <div class="card-footer">
+            <button 
+              class="btn btn-primary w-100"
+              @click="adicionarAoCarrinho(produto)"
+            >
+              Adicionar ao Carrinho
+            </button>
+          </div>
         </div>
       </div>
-    `
-  },
-  errorComponent: {
-    template: `
-      <div class="error-placeholder">
-        <p>Erro ao carregar gráfico</p>
-        <button @click="$emit('retry')">Tentar novamente</button>
-      </div>
-    `
-  },
-  delay: 200,
-  timeout: 30000
-})
+    </div>
+  </div>
+</template>
 
-// Componente lazy com retry logic
-export const LazyDataTable = defineAsyncComponent({
-  loader: () => import('@/components/DataTable.vue'),
-  loadingComponent: {
-    template: `
-      <div class="table-skeleton">
-        <div v-for="n in 5" :key="n" class="skeleton-row">
-          <div class="skeleton-cell"></div>
-          <div class="skeleton-cell"></div>
-          <div class="skeleton-cell"></div>
+<script setup>
+import { ref } from 'vue'
+
+const produtos = ref([
+  {
+    id: 1,
+    nome: 'Notebook',
+    descricao: 'Notebook de alta performance',
+    preco: 2500.00,
+    imagem: 'https://via.placeholder.com/300x200'
+  },
+  {
+    id: 2,
+    nome: 'Mouse',
+    descricao: 'Mouse ergonômico sem fio',
+    preco: 150.00,
+    imagem: 'https://via.placeholder.com/300x200'
+  },
+  {
+    id: 3,
+    nome: 'Teclado',
+    descricao: 'Teclado mecânico RGB',
+    preco: 300.00,
+    imagem: 'https://via.placeholder.com/300x200'
+  }
+])
+
+function adicionarAoCarrinho(produto) {
+  alert(`${produto.nome} adicionado ao carrinho!`)
+}
+</script>
+```
+
+#### Navbar Responsivo
+
+```vue
+<template>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">
+        <i class="bi bi-shop"></i>
+        Minha Loja
+      </a>
+      
+      <button 
+        class="navbar-toggler" 
+        type="button" 
+        data-bs-toggle="collapse" 
+        data-bs-target="#navbarNav"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Produtos</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a 
+              class="nav-link dropdown-toggle" 
+              href="#" 
+              role="button" 
+              data-bs-toggle="dropdown"
+            >
+              Categorias
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="#">Eletrônicos</a></li>
+              <li><a class="dropdown-item" href="#">Roupas</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#">Ver Todas</a></li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-cart"></i>
+              Carrinho
+              <span class="badge bg-danger">{{ quantidadeCarrinho }}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+const quantidadeCarrinho = ref(3)
+</script>
+```
+
+#### Modais e Formulários
+
+```vue
+<template>
+  <div class="container mt-5">
+    <button 
+      class="btn btn-primary" 
+      data-bs-toggle="modal" 
+      data-bs-target="#loginModal"
+    >
+      Abrir Login
+    </button>
+    
+    <!-- Modal -->
+    <div 
+      class="modal fade" 
+      id="loginModal" 
+      tabindex="-1"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Login</h5>
+            <button 
+              type="button" 
+              class="btn-close" 
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          
+          <div class="modal-body">
+            <form @submit.prevent="fazerLogin">
+              <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input 
+                  v-model="form.email"
+                  type="email" 
+                  class="form-control"
+                  :class="{ 'is-invalid': erros.email }"
+                  required
+                >
+                <div v-if="erros.email" class="invalid-feedback">
+                  {{ erros.email }}
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Senha</label>
+                <input 
+                  v-model="form.senha"
+                  type="password" 
+                  class="form-control"
+                  :class="{ 'is-invalid': erros.senha }"
+                  required
+                >
+                <div v-if="erros.senha" class="invalid-feedback">
+                  {{ erros.senha }}
+                </div>
+              </div>
+              
+              <div class="form-check mb-3">
+                <input 
+                  v-model="form.lembrar"
+                  class="form-check-input" 
+                  type="checkbox" 
+                  id="lembrar"
+                >
+                <label class="form-check-label" for="lembrar">
+                  Lembrar-me
+                </label>
+              </div>
+            </form>
+          </div>
+          
+          <div class="modal-footer">
+            <button 
+              type="button" 
+              class="btn btn-secondary" 
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-primary"
+              @click="fazerLogin"
+            >
+              Entrar
+            </button>
+          </div>
         </div>
       </div>
-    `
-  }
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+const form = ref({
+  email: '',
+  senha: '',
+  lembrar: false
 })
 
-// Dynamic import com cache
-const componentCache = new Map()
+const erros = ref({
+  email: '',
+  senha: ''
+})
 
-export function createLazyComponent(importFunction, options = {}) {
-  return defineAsyncComponent({
-    loader: async () => {
-      const cacheKey = importFunction.toString()
-      
-      if (componentCache.has(cacheKey)) {
-        return componentCache.get(cacheKey)
-      }
-      
-      try {
-        const component = await importFunction()
-        componentCache.set(cacheKey, component)
-        return component
-      } catch (error) {
-        console.error('Failed to load component:', error)
-        throw error
-      }
-    },
-    ...options
-  })
+function fazerLogin() {
+  erros.value = {}
+  
+  if (!form.value.email) {
+    erros.value.email = 'Email é obrigatório'
+    return
+  }
+  
+  if (!form.value.senha) {
+    erros.value.senha = 'Senha é obrigatória'
+    return
+  }
+  
+  console.log('Login:', form.value)
 }
+</script>
 ```
 
-#### Code Splitting por Funcionalidade
+#### Alertas e Notificações
 
-##### `src/features/auth/index.js`
+```vue
+<template>
+  <div class="container mt-5">
+    <button 
+      class="btn btn-success me-2"
+      @click="mostrarAlerta('success', 'Operação realizada com sucesso!')"
+    >
+      Sucesso
+    </button>
+    
+    <button 
+      class="btn btn-danger me-2"
+      @click="mostrarAlerta('danger', 'Ocorreu um erro!')"
+    >
+      Erro
+    </button>
+    
+    <button 
+      class="btn btn-warning"
+      @click="mostrarAlerta('warning', 'Atenção: verifique os dados!')"
+    >
+      Aviso
+    </button>
+    
+    <!-- Alertas -->
+    <div class="mt-4">
+      <div 
+        v-for="(alerta, index) in alertas" 
+        :key="index"
+        :class="`alert alert-${alerta.tipo} alert-dismissible fade show`"
+        role="alert"
+      >
+        {{ alerta.mensagem }}
+        <button 
+          type="button" 
+          class="btn-close"
+          @click="fecharAlerta(index)"
+        ></button>
+      </div>
+    </div>
+  </div>
+</template>
 
-```javascript
-// Auth feature bundle
-export const AuthModule = {
-  components: {
-    LoginForm: () => import('./components/LoginForm.vue'),
-    RegisterForm: () => import('./components/RegisterForm.vue'),
-    ForgotPassword: () => import('./components/ForgotPassword.vue')
-  },
+<script setup>
+import { ref } from 'vue'
+
+const alertas = ref([])
+
+function mostrarAlerta(tipo, mensagem) {
+  alertas.value.push({ tipo, mensagem })
   
-  store: () => import('./store/authStore.js'),
+  // Auto-fechar após 5 segundos
+  setTimeout(() => {
+    alertas.value.shift()
+  }, 5000)
+}
+
+function fecharAlerta(index) {
+  alertas.value.splice(index, 1)
+}
+</script>
+```
+
+## Parte 3: Design Responsivo
+
+### Mobile-First Approach
+
+O Bootstrap usa breakpoints mobile-first:
+
+```
+xs: < 576px   (extra small - mobile)
+sm: ≥ 576px   (small - mobile landscape)
+md: ≥ 768px   (medium - tablet)
+lg: ≥ 992px   (large - desktop)
+xl: ≥ 1200px  (extra large - wide desktop)
+xxl: ≥ 1400px (extra extra large)
+```
+
+#### Grid Responsivo
+
+```vue
+<template>
+  <div class="container">
+    <!-- 1 coluna em mobile, 2 em tablet, 3 em desktop -->
+    <div class="row g-3">
+      <div 
+        v-for="n in 6" 
+        :key="n"
+        class="col-12 col-md-6 col-lg-4"
+      >
+        <div class="card">
+          <div class="card-body">
+            Item {{ n }}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Layout complexo -->
+    <div class="row mt-4">
+      <!-- Sidebar: full width em mobile, 1/4 em desktop -->
+      <aside class="col-12 col-lg-3 mb-3">
+        <div class="card">
+          <div class="card-body">
+            <h5>Filtros</h5>
+            <!-- Filtros aqui -->
+          </div>
+        </div>
+      </aside>
+      
+      <!-- Conteúdo: full width em mobile, 3/4 em desktop -->
+      <main class="col-12 col-lg-9">
+        <div class="card">
+          <div class="card-body">
+            <h5>Produtos</h5>
+            <!-- Lista de produtos -->
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</template>
+```
+
+### Media Queries Customizadas
+
+```vue
+<template>
+  <div class="responsive-container">
+    <div class="content">
+      <h1>Título Responsivo</h1>
+      <p>Conteúdo que se adapta</p>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.responsive-container {
+  padding: 1rem;
+}
+
+.content h1 {
+  font-size: 1.5rem;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .responsive-container {
+    padding: 2rem;
+  }
   
-  routes: [
-    {
-      path: '/login',
-      name: 'Login',
-      component: () => import('./views/LoginView.vue')
-    },
-    {
-      path: '/register',
-      name: 'Register',
-      component: () => import('./views/RegisterView.vue')
+  .content h1 {
+    font-size: 2rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 992px) {
+  .responsive-container {
+    padding: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .content h1 {
+    font-size: 2.5rem;
+  }
+}
+
+/* Wide Desktop */
+@media (min-width: 1400px) {
+  .content h1 {
+    font-size: 3rem;
+  }
+}
+</style>
+```
+
+### Utilitários Responsivos do Bootstrap
+
+```vue
+<template>
+  <div class="container">
+    <!-- Visibilidade responsiva -->
+    <div class="d-none d-md-block">
+      Visível apenas em tablet e desktop
+    </div>
+    
+    <div class="d-block d-md-none">
+      Visível apenas em mobile
+    </div>
+    
+    <!-- Espaçamento responsivo -->
+    <div class="mt-3 mt-md-4 mt-lg-5">
+      Margem que aumenta com o tamanho da tela
+    </div>
+    
+    <!-- Alinhamento responsivo -->
+    <div class="text-center text-md-start">
+      Centralizado em mobile, alinhado à esquerda em tablet+
+    </div>
+    
+    <!-- Flex responsivo -->
+    <div class="d-flex flex-column flex-md-row gap-3">
+      <div class="flex-fill">Coluna 1</div>
+      <div class="flex-fill">Coluna 2</div>
+      <div class="flex-fill">Coluna 3</div>
+    </div>
+  </div>
+</template>
+```
+
+## Parte 4: SCSS/Sass com Vue.js
+
+### Instalação do Sass
+
+```bash
+npm install -D sass
+```
+
+### Usando Sass em Componentes
+
+```vue
+<template>
+  <div class="card-produto">
+    <div class="card-header">
+      <h3 class="titulo">{{ produto.nome }}</h3>
+      <span class="badge">Novo</span>
+    </div>
+    <div class="card-body">
+      <p class="descricao">{{ produto.descricao }}</p>
+      <div class="preco-container">
+        <span class="preco-original">R$ {{ produto.precoOriginal }}</span>
+        <span class="preco-desconto">R$ {{ produto.preco }}</span>
+      </div>
+    </div>
+    <div class="card-footer">
+      <button class="btn btn-comprar">Comprar</button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+const produto = ref({
+  nome: 'Notebook Gamer',
+  descricao: 'Notebook de alta performance para jogos',
+  precoOriginal: 3500.00,
+  preco: 2800.00
+})
+</script>
+
+<style lang="scss" scoped>
+$cor-primaria: #42b983;
+$cor-secundaria: #2c3e50;
+$cor-cinza: #666;
+$espacamento: 1rem;
+$raio-borda: 8px;
+
+.card-produto {
+  border: 1px solid #ddd;
+  border-radius: $raio-borda;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $espacamento;
+    background-color: #f8f9fa;
+    
+    .titulo {
+      margin: 0;
+      color: $cor-secundaria;
+      font-size: 1.25rem;
     }
-  ]
+    
+    .badge {
+      background-color: $cor-primaria;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+    }
+  }
+  
+  .card-body {
+    padding: $espacamento;
+    
+    .descricao {
+      color: $cor-cinza;
+      margin-bottom: $espacamento;
+    }
+    
+    .preco-container {
+      display: flex;
+      gap: $espacamento;
+      align-items: center;
+      
+      .preco-original {
+        text-decoration: line-through;
+        color: $cor-cinza;
+        font-size: 0.9rem;
+      }
+      
+      .preco-desconto {
+        color: $cor-primaria;
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+    }
+  }
+  
+  .card-footer {
+    padding: $espacamento;
+    background-color: white;
+    
+    .btn-comprar {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: $cor-primaria;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      
+      &:hover {
+        background-color: darken($cor-primaria, 10%);
+      }
+      
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+  }
+}
+</style>
+```
+
+### Variáveis Globais SCSS
+
+Crie `src/styles/variables.scss`:
+
+```scss
+// Cores
+$cor-primaria: #42b983;
+$cor-secundaria: #2c3e50;
+$cor-sucesso: #28a745;
+$cor-perigo: #dc3545;
+$cor-aviso: #ffc107;
+$cor-info: #17a2b8;
+
+// Tons de cinza
+$cinza-100: #f8f9fa;
+$cinza-200: #e9ecef;
+$cinza-300: #dee2e6;
+$cinza-400: #ced4da;
+$cinza-500: #adb5bd;
+$cinza-600: #6c757d;
+$cinza-700: #495057;
+$cinza-800: #343a40;
+$cinza-900: #212529;
+
+// Espaçamentos
+$espacamento-xs: 0.25rem;
+$espacamento-sm: 0.5rem;
+$espacamento-md: 1rem;
+$espacamento-lg: 1.5rem;
+$espacamento-xl: 2rem;
+$espacamento-xxl: 3rem;
+
+// Tipografia
+$fonte-primaria: 'Segoe UI', Tahoma, sans-serif;
+$fonte-secundaria: Georgia, serif;
+$fonte-mono: 'Courier New', monospace;
+
+$tamanho-texto-xs: 0.75rem;
+$tamanho-texto-sm: 0.875rem;
+$tamanho-texto-md: 1rem;
+$tamanho-texto-lg: 1.25rem;
+$tamanho-texto-xl: 1.5rem;
+$tamanho-texto-xxl: 2rem;
+
+// Bordas
+$raio-borda-sm: 4px;
+$raio-borda-md: 8px;
+$raio-borda-lg: 12px;
+$raio-borda-xl: 16px;
+$raio-borda-circular: 50%;
+
+// Sombras
+$sombra-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+$sombra-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+$sombra-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+$sombra-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+// Breakpoints
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-xxl: 1400px;
+
+// Mixins
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin responde-para($breakpoint) {
+  @if $breakpoint == sm {
+    @media (min-width: $breakpoint-sm) { @content; }
+  }
+  @else if $breakpoint == md {
+    @media (min-width: $breakpoint-md) { @content; }
+  }
+  @else if $breakpoint == lg {
+    @media (min-width: $breakpoint-lg) { @content; }
+  }
+  @else if $breakpoint == xl {
+    @media (min-width: $breakpoint-xl) { @content; }
+  }
+  @else if $breakpoint == xxl {
+    @media (min-width: $breakpoint-xxl) { @content; }
+  }
 }
 ```
 
----
-
-### Bundle Optimization
-
-#### Vite Configuration
-
-##### `vite.config.js`
+Configure o Vite para importar variáveis automaticamente em `vite.config.js`:
 
 ```javascript
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [vue()],
-  
-  build: {
-    // Code splitting optimization
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          // Vendor chunks
-          vendor: ['vue', 'vue-router', 'pinia'],
-          ui: ['bootstrap', '@fortawesome/fontawesome-free'],
-          
-          // Feature chunks
-          admin: [
-            './src/views/admin/Dashboard.vue',
-            './src/views/admin/UserManagement.vue'
-          ],
-          
-          // Async chunks
-          charts: ['chart.js', 'vue-chartjs'],
-          utils: ['axios', 'lodash']
-        },
-        
-        // Optimize chunk names
-        chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId
-          
-          if (facadeModuleId) {
-            // Nome baseado na estrutura de pastas
-            const name = facadeModuleId
-              .split('/')
-              .pop()
-              .replace(/\.(vue|js|ts)$/, '')
-            
-            return `chunks/${name}-[hash].js`
-          }
-          
-          return 'chunks/[name]-[hash].js'
-        }
-      }
-    },
-    
-    // Compression
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
-      }
-    },
-    
-    // Source maps
-    sourcemap: false,
-    
-    // Asset optimization
-    assetsInlineLimit: 4096, // 4kb
-    
-    // CSS optimization
-    cssCodeSplit: true
-  },
-  
-  // Alias para imports mais limpos
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-      '@components': resolve(__dirname, 'src/components'),
-      '@views': resolve(__dirname, 'src/views'),
-      '@stores': resolve(__dirname, 'src/stores'),
-      '@utils': resolve(__dirname, 'src/utils')
-    }
-  },
-  
-  // Otimização de dependencies
-  optimizeDeps: {
-    include: ['vue', 'vue-router', 'pinia', 'axios'],
-    exclude: ['@fortawesome/fontawesome-free']
-  }
-})
-```
-
----
-
-### Virtual Scrolling
-
-#### `src/components/VirtualScroll.vue`
-
-```vue
-<template>
-  <div class="virtual-scroll" ref="containerRef" @scroll="handleScroll">
-    <div 
-      class="virtual-scroll-spacer" 
-      :style="{ height: totalHeight + 'px' }"
-    >
-      <div 
-        class="virtual-scroll-content"
-        :style="{ transform: `translateY(${offsetY}px)` }"
-      >
-        <div
-          v-for="item in visibleItems"
-          :key="getItemKey(item)"
-          :style="{ height: itemHeight + 'px' }"
-          class="virtual-scroll-item"
-        >
-          <slot :item="item.data" :index="item.index" />
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-
-export default {
-  name: 'VirtualScroll',
-  props: {
-    items: {
-      type: Array,
-      required: true
-    },
-    itemHeight: {
-      type: Number,
-      default: 50
-    },
-    containerHeight: {
-      type: Number,
-      default: 400
-    },
-    buffer: {
-      type: Number,
-      default: 5
-    },
-    keyField: {
-      type: String,
-      default: 'id'
-    }
-  },
-  
-  setup(props, { emit }) {
-    const containerRef = ref(null)
-    const scrollTop = ref(0)
-    
-    // Computed properties
-    const totalHeight = computed(() => props.items.length * props.itemHeight)
-    
-    const startIndex = computed(() => {
-      const index = Math.floor(scrollTop.value / props.itemHeight) - props.buffer
-      return Math.max(0, index)
-    })
-    
-    const endIndex = computed(() => {
-      const visibleCount = Math.ceil(props.containerHeight / props.itemHeight)
-      const index = startIndex.value + visibleCount + props.buffer * 2
-      return Math.min(props.items.length - 1, index)
-    })
-    
-    const visibleItems = computed(() => {
-      const items = []
-      for (let i = startIndex.value; i <= endIndex.value; i++) {
-        if (props.items[i]) {
-          items.push({
-            index: i,
-            data: props.items[i]
-          })
-        }
-      }
-      return items
-    })
-    
-    const offsetY = computed(() => startIndex.value * props.itemHeight)
-    
-    // Methods
-    const handleScroll = () => {
-      if (containerRef.value) {
-        scrollTop.value = containerRef.value.scrollTop
-        
-        // Emit scroll events for infinite loading
-        const { scrollTop: top, scrollHeight, clientHeight } = containerRef.value
-        
-        if (top + clientHeight >= scrollHeight - 100) {
-          emit('load-more')
-        }
-      }
-    }
-    
-    const getItemKey = (item) => {
-      return item.data[props.keyField] || item.index
-    }
-    
-    const scrollToIndex = (index) => {
-      if (containerRef.value) {
-        const targetScrollTop = index * props.itemHeight
-        containerRef.value.scrollTop = targetScrollTop
-      }
-    }
-    
-    const scrollToItem = (item) => {
-      const index = props.items.findIndex(i => i[props.keyField] === item[props.keyField])
-      if (index !== -1) {
-        scrollToIndex(index)
-      }
-    }
-    
-    // Lifecycle
-    onMounted(() => {
-      if (containerRef.value) {
-        containerRef.value.style.height = `${props.containerHeight}px`
-      }
-    })
-    
-    // Watchers
-    watch(() => props.items.length, () => {
-      // Reset scroll when items change significantly
-      if (containerRef.value) {
-        containerRef.value.scrollTop = 0
-        scrollTop.value = 0
-      }
-    })
-    
-    return {
-      containerRef,
-      totalHeight,
-      visibleItems,
-      offsetY,
-      handleScroll,
-      getItemKey,
-      scrollToIndex,
-      scrollToItem
-    }
-  }
-}
-</script>
-
-<style scoped>
-.virtual-scroll {
-  overflow-y: auto;
-  position: relative;
-}
-
-.virtual-scroll-spacer {
-  position: relative;
-}
-
-.virtual-scroll-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.virtual-scroll-item {
-  overflow: hidden;
-}
-</style>
-```
-
-#### Uso do Virtual Scroll
-
-```vue
-<template>
-  <div class="product-list">
-    <VirtualScroll
-      :items="products"
-      :item-height="120"
-      :container-height="600"
-      @load-more="loadMoreProducts"
-    >
-      <template #default="{ item, index }">
-        <div class="product-item">
-          <img :src="item.image" :alt="item.name" />
-          <div class="product-info">
-            <h3>{{ item.name }}</h3>
-            <p class="price">${{ item.price }}</p>
-            <button @click="addToCart(item)">
-              Add to Cart
-            </button>
-          </div>
-        </div>
-      </template>
-    </VirtualScroll>
-  </div>
-</template>
-```
-
----
-
-### Memoização e Caching
-
-#### `src/composables/useCache.js`
-
-```javascript
-import { ref, computed, watch } from 'vue'
-
-/**
- * Sistema de cache reativo
- */
-export function useCache(maxSize = 100) {
-  const cache = ref(new Map())
-  const accessOrder = ref([])
-  
-  const set = (key, value, ttl = null) => {
-    // Remove oldest entries if cache is full
-    if (cache.value.size >= maxSize && !cache.value.has(key)) {
-      const oldestKey = accessOrder.value.shift()
-      cache.value.delete(oldestKey)
-    }
-    
-    const entry = {
-      value,
-      timestamp: Date.now(),
-      ttl
-    }
-    
-    cache.value.set(key, entry)
-    
-    // Update access order
-    const existingIndex = accessOrder.value.indexOf(key)
-    if (existingIndex > -1) {
-      accessOrder.value.splice(existingIndex, 1)
-    }
-    accessOrder.value.push(key)
-  }
-  
-  const get = (key) => {
-    const entry = cache.value.get(key)
-    
-    if (!entry) return undefined
-    
-    // Check TTL
-    if (entry.ttl && Date.now() - entry.timestamp > entry.ttl) {
-      cache.value.delete(key)
-      const index = accessOrder.value.indexOf(key)
-      if (index > -1) {
-        accessOrder.value.splice(index, 1)
-      }
-      return undefined
-    }
-    
-    // Update access order
-    const index = accessOrder.value.indexOf(key)
-    if (index > -1) {
-      accessOrder.value.splice(index, 1)
-      accessOrder.value.push(key)
-    }
-    
-    return entry.value
-  }
-  
-  const has = (key) => {
-    const entry = cache.value.get(key)
-    if (!entry) return false
-    
-    // Check TTL
-    if (entry.ttl && Date.now() - entry.timestamp > entry.ttl) {
-      cache.value.delete(key)
-      return false
-    }
-    
-    return true
-  }
-  
-  const clear = () => {
-    cache.value.clear()
-    accessOrder.value = []
-  }
-  
-  const size = computed(() => cache.value.size)
-  
-  return {
-    set,
-    get,
-    has,
-    clear,
-    size
-  }
-}
-
-/**
- * Memoização de funções computadas
- */
-export function useMemo(fn, dependencies = []) {
-  const cache = ref(new Map())
-  
-  return computed(() => {
-    const depsKey = JSON.stringify(dependencies.map(dep => 
-      typeof dep === 'function' ? dep() : dep
-    ))
-    
-    if (cache.value.has(depsKey)) {
-      return cache.value.get(depsKey)
-    }
-    
-    const result = fn()
-    cache.value.set(depsKey, result)
-    return result
-  })
-}
-
-/**
- * Cache para requisições HTTP
- */
-export function useHttpCache() {
-  const cache = useCache(50)
-  
-  const cachedRequest = async (url, options = {}) => {
-    const cacheKey = `${url}${JSON.stringify(options)}`
-    
-    // Return cached response if exists
-    if (cache.has(cacheKey)) {
-      return cache.get(cacheKey)
-    }
-    
-    // Make request and cache response
-    try {
-      const response = await fetch(url, options)
-      const data = await response.json()
-      
-      // Cache for 5 minutes
-      cache.set(cacheKey, data, 5 * 60 * 1000)
-      
-      return data
-    } catch (error) {
-      throw error
-    }
-  }
-  
-  return {
-    cachedRequest,
-    clearCache: cache.clear
-  }
-}
-```
-
----
-
-### Otimização de Renderização
-
-#### `src/components/OptimizedList.vue`
-
-```vue
-<template>
-  <div class="optimized-list">
-    <!-- Use v-memo para listas grandes -->
-    <div
-      v-for="item in paginatedItems"
-      :key="item.id"
-      v-memo="[item.id, item.updatedAt]"
-      class="list-item"
-    >
-      <ListItem :item="item" />
-    </div>
-    
-    <!-- Pagination -->
-    <div class="pagination">
-      <button 
-        @click="currentPage--"
-        :disabled="currentPage === 1"
-      >
-        Anterior
-      </button>
-      
-      <span>{{ currentPage }} de {{ totalPages }}</span>
-      
-      <button 
-        @click="currentPage++"
-        :disabled="currentPage === totalPages"
-      >
-        Próximo
-      </button>
-    </div>
-  </div>
-</template>
-
-<script>
-import { computed, ref } from 'vue'
-import ListItem from './ListItem.vue'
-
-export default {
-  name: 'OptimizedList',
-  components: { ListItem },
-  props: {
-    items: Array,
-    pageSize: {
-      type: Number,
-      default: 20
-    }
-  },
-  
-  setup(props) {
-    const currentPage = ref(1)
-    
-    const totalPages = computed(() => 
-      Math.ceil(props.items.length / props.pageSize)
-    )
-    
-    const paginatedItems = computed(() => {
-      const start = (currentPage.value - 1) * props.pageSize
-      const end = start + props.pageSize
-      return props.items.slice(start, end)
-    })
-    
-    return {
-      currentPage,
-      totalPages,
-      paginatedItems
-    }
-  }
-}
-</script>
-```
-
-#### `src/components/ListItem.vue` (Otimizado)
-
-```vue
-<template>
-  <div class="list-item-optimized">
-    <!-- Usar v-once para dados estáticos -->
-    <div v-once class="static-content">
-      {{ item.staticData }}
-    </div>
-    
-    <!-- Lazy load de imagens -->
-    <img 
-      v-if="imageLoaded"
-      :src="item.image" 
-      :alt="item.name"
-      @load="onImageLoad"
-      loading="lazy"
-    />
-    <div v-else class="image-placeholder">
-      <div class="skeleton-image"></div>
-    </div>
-    
-    <!-- Conteúdo dinâmico otimizado -->
-    <div class="dynamic-content">
-      <h3>{{ item.name }}</h3>
-      <p>{{ formattedPrice }}</p>
-    </div>
-  </div>
-</template>
-
-<script>
-import { computed, ref, onMounted } from 'vue'
-
-export default {
-  name: 'ListItem',
-  props: {
-    item: {
-      type: Object,
-      required: true
-    }
-  },
-  
-  setup(props) {
-    const imageLoaded = ref(false)
-    
-    // Memoizar cálculos pesados
-    const formattedPrice = computed(() => {
-      return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      }).format(props.item.price)
-    })
-    
-    const onImageLoad = () => {
-      imageLoaded.value = true
-    }
-    
-    // Lazy load de imagem com Intersection Observer
-    onMounted(() => {
-      if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach(entry => {
-              if (entry.isIntersecting) {
-                imageLoaded.value = true
-                observer.disconnect()
-              }
-            })
-          },
-          { threshold: 0.1 }
-        )
-        
-        // Observar o componente
-        observer.observe(document.querySelector('.list-item-optimized'))
-      } else {
-        // Fallback para navegadores sem suporte
-        imageLoaded.value = true
-      }
-    })
-    
-    return {
-      imageLoaded,
-      formattedPrice,
-      onImageLoad
-    }
-  }
-}
-</script>
-
-<style scoped>
-.skeleton-image {
-  width: 100%;
-  height: 200px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-</style>
-```
-
----
-
-### PWA e Service Workers
-
-#### `public/sw.js`
-
-```javascript
-const CACHE_NAME = 'vue-app-v1'
-const STATIC_CACHE = 'static-v1'
-const DYNAMIC_CACHE = 'dynamic-v1'
-
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/css/app.css',
-  '/js/app.js'
-]
-
-// Install event
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => {
-        console.log('Caching static assets')
-        return cache.addAll(STATIC_ASSETS)
-      })
-      .then(() => {
-        return self.skipWaiting()
-      })
-  )
-})
-
-// Activate event
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then(cacheNames => {
-        return Promise.all(
-          cacheNames
-            .filter(cacheName => cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE)
-            .map(cacheName => caches.delete(cacheName))
-        )
-      })
-      .then(() => {
-        return self.clients.claim()
-      })
-  )
-})
-
-// Fetch event - Network First with Cache Fallback
-self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('/api/')) {
-    // API requests - Network first
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          const responseClone = response.clone()
-          caches.open(DYNAMIC_CACHE)
-            .then(cache => {
-              cache.put(event.request, responseClone)
-            })
-          return response
-        })
-        .catch(() => {
-          return caches.match(event.request)
-        })
-    )
-  } else {
-    // Static assets - Cache first
-    event.respondWith(
-      caches.match(event.request)
-        .then(response => {
-          return response || fetch(event.request)
-            .then(fetchResponse => {
-              const responseClone = fetchResponse.clone()
-              caches.open(DYNAMIC_CACHE)
-                .then(cache => {
-                  cache.put(event.request, responseClone)
-                })
-              return fetchResponse
-            })
-        })
-    )
-  }
-})
-```
-
-#### `public/manifest.json`
-
-```json
-{
-  "name": "Vue.js App",
-  "short_name": "VueApp",
-  "description": "A progressive Vue.js application",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#007bff",
-  "orientation": "portrait",
-  "icons": [
-    {
-      "src": "/icons/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
-}
-```
-
----
-
-### Otimização de CSS
-
-#### CSS Critical Path
-
-```javascript
-// vite.config.js
-import { defineConfig } from 'vite'
-
-export default defineConfig({
-  build: {
-    rollupOptions: {
-      output: {
-        // Separate critical CSS
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name.endsWith('.css')) {
-            if (assetInfo.name.includes('critical')) {
-              return 'css/critical-[hash].css'
-            }
-            return 'css/[name]-[hash].css'
-          }
-          return 'assets/[name]-[hash][extname]'
-        }
-      }
-    }
-  },
-  
   css: {
     preprocessorOptions: {
       scss: {
-        // Inject global variables
         additionalData: `@import "@/styles/variables.scss";`
       }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': '/src'
     }
   }
 })
 ```
 
-#### `src/styles/critical.scss`
+Agora você pode usar as variáveis em qualquer componente sem importar:
 
-```scss
-/* Critical CSS - Above the fold */
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.6;
+```vue
+<style lang="scss" scoped>
+.meu-componente {
+  color: $cor-primaria;
+  padding: $espacamento-md;
+  border-radius: $raio-borda-md;
+  box-shadow: $sombra-md;
+  
+  @include responde-para(md) {
+    padding: $espacamento-lg;
+  }
+  
+  .titulo {
+    font-size: $tamanho-texto-xl;
+    margin-bottom: $espacamento-sm;
+  }
+}
+</style>
+```
+
+## Parte 5: Temas Dinâmicos e Modo Escuro
+
+### Sistema de Temas com Variáveis CSS
+
+```vue
+<template>
+  <div class="app" :data-theme="temaAtual">
+    <header class="header">
+      <h1>Minha Aplicação</h1>
+      <button 
+        class="btn-tema"
+        @click="alternarTema"
+      >
+        {{ temaAtual === 'claro' ? '🌙 Escuro' : '☀️ Claro' }}
+      </button>
+    </header>
+    
+    <main class="conteudo">
+      <div class="card">
+        <h2>Card com Tema</h2>
+        <p>O tema se adapta automaticamente</p>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script setup>
+import { ref, watch, onMounted } from 'vue'
+
+const temaAtual = ref('claro')
+
+function alternarTema() {
+  temaAtual.value = temaAtual.value === 'claro' ? 'escuro' : 'claro'
+}
+
+// Salvar tema no localStorage
+watch(temaAtual, (novoTema) => {
+  localStorage.setItem('tema', novoTema)
+})
+
+// Carregar tema salvo
+onMounted(() => {
+  const temaSalvo = localStorage.getItem('tema')
+  if (temaSalvo) {
+    temaAtual.value = temaSalvo
+  }
+})
+</script>
+
+<style scoped>
+.app {
+  min-height: 100vh;
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Tema Claro */
+.app[data-theme="claro"] {
+  --cor-fundo: #ffffff;
+  --cor-texto: #2c3e50;
+  --cor-primaria: #42b983;
+  --cor-secundaria: #f8f9fa;
+  --cor-borda: #dee2e6;
+}
+
+/* Tema Escuro */
+.app[data-theme="escuro"] {
+  --cor-fundo: #1a1a1a;
+  --cor-texto: #e0e0e0;
+  --cor-primaria: #42b983;
+  --cor-secundaria: #2d2d2d;
+  --cor-borda: #404040;
 }
 
 .header {
-  background: #007bff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background-color: var(--cor-secundaria);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.btn-tema {
+  padding: 0.5rem 1rem;
+  background-color: var(--cor-primaria);
   color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.btn-tema:hover {
+  opacity: 0.8;
+}
+
+.conteudo {
+  padding: 2rem;
+}
+
+.card {
+  background-color: var(--cor-secundaria);
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+</style>
+```
+
+## Parte 6: Animações e Transições
+
+### Transições CSS Simples
+
+```vue
+<template>
+  <div class="demo-transicoes">
+    <button @click="visivel = !visivel">
+      {{ visivel ? 'Ocultar' : 'Mostrar' }}
+    </button>
+    
+    <transition name="fade">
+      <div v-if="visivel" class="box">
+        Elemento com fade
+      </div>
+    </transition>
+    
+    <transition name="slide">
+      <div v-if="visivel" class="box">
+        Elemento com slide
+      </div>
+    </transition>
+    
+    <transition name="scale">
+      <div v-if="visivel" class="box">
+        Elemento com escala
+      </div>
+    </transition>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+const visivel = ref(true)
+</script>
+
+<style scoped>
+.box {
+  padding: 2rem;
+  margin: 1rem 0;
+  background-color: #42b983;
+  color: white;
+  border-radius: 8px;
+}
+
+/* Fade */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Slide */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.slide-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Scale */
+.scale-enter-active,
+.scale-leave-active {
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.scale-enter-from,
+.scale-leave-to {
+  transform: scale(0);
+  opacity: 0;
+}
+</style>
+```
+
+### Animações em Listas
+
+```vue
+<template>
+  <div class="lista-animada">
+    <button @click="adicionarItem">Adicionar Item</button>
+    <button @click="embaralhar">Embaralhar</button>
+    
+    <transition-group name="lista" tag="div" class="itens">
+      <div 
+        v-for="item in itens" 
+        :key="item.id"
+        class="item"
+      >
+        {{ item.texto }}
+        <button @click="removerItem(item.id)">×</button>
+      </div>
+    </transition-group>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+const itens = ref([
+  { id: 1, texto: 'Item 1' },
+  { id: 2, texto: 'Item 2' },
+  { id: 3, texto: 'Item 3' }
+])
+
+let proximoId = 4
+
+function adicionarItem() {
+  itens.value.push({
+    id: proximoId++,
+    texto: `Item ${proximoId - 1}`
+  })
+}
+
+function removerItem(id) {
+  const index = itens.value.findIndex(item => item.id === id)
+  if (index > -1) {
+    itens.value.splice(index, 1)
+  }
+}
+
+function embaralhar() {
+  itens.value = itens.value.sort(() => Math.random() - 0.5)
+}
+</script>
+
+<style scoped>
+.itens {
+  margin-top: 1rem;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 1rem;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  margin: 0.5rem 0;
+  background-color: #f0f0f0;
+  border-radius: 4px;
 }
 
-.loading-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
+.lista-move,
+.lista-enter-active,
+.lista-leave-active {
+  transition: all 0.5s ease;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.lista-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
 }
 
-/* Skeleton loading */
-.skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+.lista-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+.lista-leave-active {
+  position: absolute;
+  width: 100%;
 }
+</style>
 ```
 
----
+## Exercícios Práticos
 
-### Exercícios Práticos
+Esta aula possui 3 exercícios práticos para você aplicar os conceitos aprendidos:
 
-#### Exercício 1: Performance Audit
-Implementar monitoramento completo:
-- Core Web Vitals tracking
-- Bundle size analysis
-- Performance budget
-- Lighthouse CI integration
+### Exercício 1: Card de Produto Estilizado
+Criar um card de produto responsivo usando Bootstrap e SCSS, com efeitos hover e layout que se adapta do mobile ao desktop.
 
-#### Exercício 2: Virtual Scrolling Avançado
-Criar virtual scroll com:
-- Variable item heights
-- Horizontal scrolling
-- Infinite loading
-- Search filtering
+### Exercício 2: Sistema de Temas
+Implementar um sistema completo de temas (claro/escuro) com múltiplas paletas de cores, salvando preferências no localStorage.
 
-#### Exercício 3: PWA Completa
-Desenvolver PWA com:
-- Offline functionality
-- Background sync
-- Push notifications
-- Install prompt
+### Exercício 3: Dashboard Responsivo
+Desenvolver um dashboard administrativo responsivo com sidebar colapsável, cards informativos e gráficos que se adaptam a diferentes tamanhos de tela.
 
----
-
-### Comandos Git
-
-```bash
-git add .
-git commit -m "Aula 10 - Performance e Otimização"
-```
-
----
-
-### Próxima Aula
-
-Na **Aula 11** veremos:
-- Deploy em diferentes plataformas
-- CI/CD pipelines
-- Environment configuration
-- Production optimizations
